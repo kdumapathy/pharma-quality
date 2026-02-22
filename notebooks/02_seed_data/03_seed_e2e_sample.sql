@@ -142,6 +142,96 @@ INSERT INTO l1_raw.raw_process_recipe VALUES
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## L1 Raw — Transcribed PDF/SOP Specification (Ibuprofen 200 mg Tablet)
+-- MAGIC A second product specification transcribed from a regulatory SOP document into CSV.
+-- MAGIC Each row = one test-limit combination from the source document.
+
+-- COMMAND ----------
+
+INSERT INTO l1_raw.raw_pdf_specification VALUES
+    -- Assay AC (page 3 of SOP)
+    ('ping-001','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph001',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','3','Section 5.1 Acceptance Criteria','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'ASSAY','Assay','Chemical','USP <621>','%','CQA',
+     'AC','98.0','102.0','100.0',NULL,'98.0% - 102.0%',
+     '3.2.P.5.1','USP','ICH Q6A','Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Assay NOR (page 4)
+    ('ping-002','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph002',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','4','Section 5.2 Normal Operating Ranges','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'ASSAY','Assay','Chemical','USP <621>','%','CQA',
+     'NOR','99.0','101.0','100.0',NULL,'99.0% - 101.0%',
+     '3.2.P.5.1','USP',NULL,'Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Dissolution AC (page 3)
+    ('ping-003','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph003',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','3','Section 5.1 Acceptance Criteria','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'DISSO','Dissolution','Physical','USP <711>','%','CQA',
+     'AC','75.0',NULL,NULL,NULL,'NLT 75% (Q) in 30 minutes',
+     '3.2.P.5.1','USP','ICH Q6A','Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Total Impurities AC (page 3)
+    ('ping-004','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph004',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','3','Section 5.1 Acceptance Criteria','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'IMPTOT','Total Impurities','Chemical',NULL,'%','CQA',
+     'AC',NULL,'1.0',NULL,NULL,'NMT 1.0%',
+     '3.2.P.5.1','USP','ICH Q3B','Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Total Impurities NOR (page 4)
+    ('ping-005','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph005',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','4','Section 5.2 Normal Operating Ranges','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'IMPTOT','Total Impurities','Chemical',NULL,'%','CQA',
+     'NOR',NULL,'0.7',NULL,NULL,'NMT 0.7%',
+     '3.2.P.5.1','USP',NULL,'Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Hardness AC (page 3)
+    ('ping-006','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph006',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','3','Section 5.1 Acceptance Criteria','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'HARD','Hardness','Physical',NULL,'kp','NCQA',
+     'AC','6.0','14.0','10.0',NULL,'6.0 - 14.0 kp',
+     NULL,NULL,NULL,'Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Description AC (page 3) — text limit
+    ('ping-007','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph007',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','3','Section 5.1 Acceptance Criteria','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'DESC','Description','Physical',NULL,'N/A','REPORT',
+     'AC',NULL,NULL,NULL,'White to off-white round biconvex film-coated tablets','White to off-white round biconvex film-coated tablets',
+     NULL,NULL,NULL,'Release',NULL,
+     '2025-01-20','2025-01-18','Sarah Johnson'),
+
+    -- Assay Stability AC (page 5 — accelerated 40C/75%RH T6M)
+    ('ping-008','PDF','SOP-QC-042-Ibuprofen-200mg-Spec-v2.pdf','PBATCH-2026-001',CURRENT_TIMESTAMP(),'ph008',
+     'DOC-042','SOP-QC-042 Ibuprofen 200mg Tablet Specification','2.0','SOP','SOP-QC-042','5','Section 6.1 Stability Specifications','2025-02-01','Data Entry Team',
+     'QC-SPEC-2026-0042','2.0','Ibuprofen 200 mg Film-Coated Tablets','Drug Product',
+     'PROD-002','Ibuprofen 200 mg Tablets','MAT-002','Ibuprofen','Milwaukee Plant','US',
+     'ASSAY','Assay','Chemical','USP <621>','%','CQA',
+     'AC','95.0','105.0','100.0',NULL,'95.0% - 105.0%',
+     '3.2.P.5.1','USP','ICH Q1A','Stability','40C75RH',
+     '2025-01-20','2025-01-18','Sarah Johnson');
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify Raw Data Counts
 
 -- COMMAND ----------
@@ -152,4 +242,6 @@ SELECT 'raw_lims_spec_item', COUNT(*) FROM l1_raw.raw_lims_spec_item
 UNION ALL
 SELECT 'raw_lims_spec_limit', COUNT(*) FROM l1_raw.raw_lims_spec_limit
 UNION ALL
-SELECT 'raw_process_recipe', COUNT(*) FROM l1_raw.raw_process_recipe;
+SELECT 'raw_process_recipe', COUNT(*) FROM l1_raw.raw_process_recipe
+UNION ALL
+SELECT 'raw_pdf_specification', COUNT(*) FROM l1_raw.raw_pdf_specification;

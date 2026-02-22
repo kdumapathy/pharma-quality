@@ -248,6 +248,96 @@ TBLPROPERTIES (
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ### src_pdf_specification
+-- MAGIC Cleansed, typed specification data from transcribed PDF/SOP documents.
+-- MAGIC Denormalized: one row per test-limit extracted from the document.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_1_lims.src_pdf_specification
+(
+    -- Source identity
+    source_document_id          STRING          NOT NULL    COMMENT 'Document natural key',
+    source_row_key              STRING          NOT NULL    COMMENT 'Unique row key (document_id + test_code + limit_type)',
+    source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID',
+    source_ingestion_timestamp  TIMESTAMP       NOT NULL    COMMENT 'Ingestion timestamp',
+    record_hash                 STRING                      COMMENT 'SHA-256 for CDC',
+
+    -- Document provenance
+    document_name               STRING          NOT NULL    COMMENT 'Document title (trimmed)',
+    document_version            STRING                      COMMENT 'Document revision',
+    document_type               STRING                      COMMENT 'Mapped: SOP|SPEC_SHEET|REGULATORY|CERTIFICATE',
+    sop_number                  STRING                      COMMENT 'SOP number (trimmed)',
+    page_number                 INT                         COMMENT 'Page number (cast)',
+    section_reference           STRING                      COMMENT 'Section heading (trimmed)',
+    transcription_date          DATE                        COMMENT 'Transcription date (cast)',
+    transcribed_by              STRING                      COMMENT 'Transcriber',
+
+    -- Specification header
+    spec_number                 STRING                      COMMENT 'Specification number (cleansed)',
+    spec_version                STRING                      COMMENT 'Version (standardized)',
+    spec_title                  STRING                      COMMENT 'Title (trimmed)',
+    spec_type_code              STRING                      COMMENT 'Mapped: DS|DP|RM|EXCIP|INTERMED|IPC|CCS',
+
+    -- Product / Material
+    product_id_pdf              STRING                      COMMENT 'Product ID from document (pre-MDM)',
+    product_name                STRING                      COMMENT 'Product name (trimmed)',
+    material_id_pdf             STRING                      COMMENT 'Material ID from document (pre-MDM)',
+    material_name               STRING                      COMMENT 'Material name (trimmed)',
+    site_name                   STRING                      COMMENT 'Site name (trimmed)',
+    market_region               STRING                      COMMENT 'Market region (standardized)',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code (cleansed)',
+    test_name                   STRING          NOT NULL    COMMENT 'Test name (trimmed)',
+    test_category_code          STRING                      COMMENT 'Mapped: PHY|CHE|IMP|MIC|BIO|STER|PACK',
+    test_method_reference       STRING                      COMMENT 'Method reference (trimmed)',
+    uom_code                    STRING                      COMMENT 'Unit code (standardized)',
+    criticality_code            STRING                      COMMENT 'Mapped: CQA|CCQA|NCQA|KQA|REPORT',
+
+    -- Limit
+    limit_type_code             STRING          NOT NULL    COMMENT 'Mapped: AC|NOR|PAR|ALERT|ACTION|REPORT',
+    lower_limit_value           DECIMAL(18, 6)              COMMENT 'Lower limit (cast)',
+    upper_limit_value           DECIMAL(18, 6)              COMMENT 'Upper limit (cast)',
+    target_value                DECIMAL(18, 6)              COMMENT 'Target value (cast)',
+    limit_text                  STRING                      COMMENT 'Qualitative limit text (trimmed)',
+    limit_expression            STRING                      COMMENT 'Full limit expression as written in document',
+
+    -- Regulatory
+    ctd_section                 STRING                      COMMENT 'CTD section (standardized)',
+    compendia_reference         STRING                      COMMENT 'Compendia reference (trimmed)',
+    regulatory_basis            STRING                      COMMENT 'Regulatory basis (trimmed)',
+    stage_code                  STRING                      COMMENT 'Mapped: RELEASE|STABILITY|IPC|BOTH',
+    stability_condition         STRING                      COMMENT 'Stability condition (standardized)',
+
+    -- Dates
+    effective_date              DATE                        COMMENT 'Effective date (cast)',
+    approval_date               DATE                        COMMENT 'Approval date (cast)',
+    approved_by                 STRING                      COMMENT 'Approver (trimmed)',
+
+    -- DQ flags
+    dq_spec_number_present      BOOLEAN                     COMMENT 'TRUE if spec_number was present',
+    dq_numeric_cast_error       BOOLEAN                     COMMENT 'TRUE if any numeric cast failed',
+    dq_date_parse_error         BOOLEAN                     COMMENT 'TRUE if any date parse failed',
+    dq_limit_type_mapped        BOOLEAN                     COMMENT 'TRUE if limit_type_code mapped successfully',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'L2.1 load timestamp',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Latest version flag'
+)
+USING DELTA
+PARTITIONED BY (limit_type_code)
+COMMENT 'L2.1 Source conform: Transcribed PDF/SOP specification data. Typed, standardized.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L2.1',
+    'quality.source'                    = 'PDF',
+    'quality.source_raw_table'          = 'l1_raw.raw_pdf_specification'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L2.1 Tables
 
 -- COMMAND ----------

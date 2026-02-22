@@ -253,6 +253,91 @@ TBLPROPERTIES (
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ### raw_pdf_specification
+-- MAGIC Transcribed specification data from SOP / PDF documents.
+-- MAGIC Each row represents one test-limit combination extracted from a document page.
+-- MAGIC Flat/denormalized structure since the source is a transcribed CSV, not a relational system.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l1_raw.raw_pdf_specification
+(
+    -- Ingestion Metadata
+    _ingestion_id               STRING          NOT NULL    COMMENT 'UUID assigned by ingestion pipeline',
+    _source_system              STRING          NOT NULL    COMMENT 'Source system tag (PDF)',
+    _source_file                STRING                      COMMENT 'Original PDF file path or name',
+    _batch_id                   STRING          NOT NULL    COMMENT 'ETL batch identifier',
+    _ingestion_timestamp        TIMESTAMP       NOT NULL    COMMENT 'UTC ingestion timestamp',
+    _record_hash                STRING                      COMMENT 'SHA-256 hash of row content',
+
+    -- Document Provenance
+    document_id                 STRING                      COMMENT 'Unique document identifier',
+    document_name               STRING                      COMMENT 'PDF / SOP document title',
+    document_version            STRING                      COMMENT 'Document revision or version',
+    document_type               STRING                      COMMENT 'Type: SOP|SPEC_SHEET|REGULATORY|CERTIFICATE',
+    sop_number                  STRING                      COMMENT 'SOP document number (e.g., SOP-QC-001)',
+    page_number                 STRING                      COMMENT 'Page number in source PDF',
+    section_reference           STRING                      COMMENT 'Section heading or reference in the document',
+    transcription_date          STRING                      COMMENT 'Date the PDF was transcribed to CSV',
+    transcribed_by              STRING                      COMMENT 'User or system that performed transcription',
+
+    -- Specification Header
+    spec_number                 STRING                      COMMENT 'Specification number extracted from document',
+    spec_version                STRING                      COMMENT 'Specification version',
+    spec_title                  STRING                      COMMENT 'Specification title from document',
+    spec_type                   STRING                      COMMENT 'Type: Drug Product / Drug Substance / etc.',
+
+    -- Product / Material
+    product_id                  STRING                      COMMENT 'Product ID referenced in document',
+    product_name                STRING                      COMMENT 'Product name from document',
+    material_id                 STRING                      COMMENT 'Material ID referenced in document',
+    material_name               STRING                      COMMENT 'Material / substance name',
+    site_name                   STRING                      COMMENT 'Manufacturing / testing site from document',
+    market_region               STRING                      COMMENT 'Target market or region',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code from document',
+    test_name                   STRING                      COMMENT 'Test / parameter name',
+    test_category               STRING                      COMMENT 'Test category (Physical / Chemical / etc.)',
+    test_method_reference       STRING                      COMMENT 'Method reference (e.g., USP <621>)',
+    uom                         STRING                      COMMENT 'Unit of measure from document',
+    criticality                 STRING                      COMMENT 'CQA / CCQA / NCQA from document',
+
+    -- Limit Values (one row per test-limit combination)
+    limit_type                  STRING                      COMMENT 'Limit type: AC|NOR|PAR|ALERT|ACTION|REPORT',
+    lower_limit                 STRING                      COMMENT 'Lower limit value (as printed in document)',
+    upper_limit                 STRING                      COMMENT 'Upper limit value',
+    target_value                STRING                      COMMENT 'Target / nominal value',
+    limit_text                  STRING                      COMMENT 'Qualitative limit text (e.g., White powder)',
+    limit_expression            STRING                      COMMENT 'Full limit as written in document (e.g., NMT 0.15%)',
+
+    -- Regulatory Context
+    ctd_section                 STRING                      COMMENT 'CTD section reference from document',
+    compendia_reference         STRING                      COMMENT 'Compendia reference (USP / EP / JP)',
+    regulatory_basis            STRING                      COMMENT 'Regulatory basis (ICH Q6A / Q3B)',
+    stage                       STRING                      COMMENT 'Stage: Release / Stability',
+    stability_condition         STRING                      COMMENT 'Stability storage condition',
+
+    -- Status / Dates
+    effective_date              STRING                      COMMENT 'Effective date from document',
+    approval_date               STRING                      COMMENT 'Approval date from document',
+    approved_by                 STRING                      COMMENT 'Approver name from signature block'
+)
+USING DELTA
+PARTITIONED BY (_source_system)
+COMMENT 'L1 Raw: Transcribed PDF/SOP specification data. Flat CSV ingest. All STRING.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L1',
+    'quality.source'                    = 'PDF',
+    'quality.table_type'                = 'raw_ingest',
+    'quality.transformation'            = 'none'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L1 Tables
 
 -- COMMAND ----------

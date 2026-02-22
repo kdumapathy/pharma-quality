@@ -293,6 +293,107 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## src_pdf_specification
+-- MAGIC Transforms the flat transcribed PDF/SOP data into typed, standardized rows.
+
+-- COMMAND ----------
+
+MERGE INTO l2_1_lims.src_pdf_specification AS tgt
+USING (
+    SELECT
+        document_id                                     AS source_document_id,
+        CONCAT(document_id, ':', COALESCE(test_code, test_name), ':', COALESCE(limit_type, 'AC')) AS source_row_key,
+        _batch_id                                       AS source_batch_id,
+        _ingestion_timestamp                            AS source_ingestion_timestamp,
+        _record_hash                                    AS record_hash,
+
+        TRIM(document_name)                             AS document_name,
+        TRIM(document_version)                          AS document_version,
+        UPPER(TRIM(document_type))                      AS document_type,
+        TRIM(sop_number)                                AS sop_number,
+        TRY_CAST(page_number AS INT)                    AS page_number,
+        TRIM(section_reference)                         AS section_reference,
+        TRY_CAST(transcription_date AS DATE)            AS transcription_date,
+        TRIM(transcribed_by)                            AS transcribed_by,
+
+        TRIM(spec_number)                               AS spec_number,
+        COALESCE(TRIM(spec_version), '1.0')             AS spec_version,
+        TRIM(spec_title)                                AS spec_title,
+        CASE UPPER(TRIM(spec_type))
+            WHEN 'DRUG PRODUCT'   THEN 'DP'
+            WHEN 'DRUG SUBSTANCE' THEN 'DS'
+            WHEN 'RAW MATERIAL'   THEN 'RM'
+            WHEN 'EXCIPIENT'      THEN 'EXCIP'
+            WHEN 'INTERMEDIATE'   THEN 'INTERMED'
+            WHEN 'IN-PROCESS'     THEN 'IPC'
+            ELSE UPPER(TRIM(spec_type))
+        END                                             AS spec_type_code,
+
+        TRIM(product_id)                                AS product_id_pdf,
+        TRIM(product_name)                              AS product_name,
+        TRIM(material_id)                               AS material_id_pdf,
+        TRIM(material_name)                             AS material_name,
+        TRIM(site_name)                                 AS site_name,
+        TRIM(market_region)                             AS market_region,
+
+        UPPER(TRIM(test_code))                          AS test_code,
+        TRIM(test_name)                                 AS test_name,
+        CASE UPPER(TRIM(test_category))
+            WHEN 'PHYSICAL'         THEN 'PHY'
+            WHEN 'CHEMICAL'         THEN 'CHE'
+            WHEN 'IMPURITY'         THEN 'IMP'
+            WHEN 'MICROBIOLOGICAL'  THEN 'MIC'
+            WHEN 'BIOLOGICAL'       THEN 'BIO'
+            WHEN 'STERILITY'        THEN 'STER'
+            WHEN 'PACKAGING'        THEN 'PACK'
+            ELSE UPPER(TRIM(test_category))
+        END                                             AS test_category_code,
+        TRIM(test_method_reference)                     AS test_method_reference,
+        TRIM(uom)                                       AS uom_code,
+        UPPER(TRIM(criticality))                        AS criticality_code,
+
+        UPPER(TRIM(limit_type))                         AS limit_type_code,
+        TRY_CAST(lower_limit AS DECIMAL(18,6))          AS lower_limit_value,
+        TRY_CAST(upper_limit AS DECIMAL(18,6))          AS upper_limit_value,
+        TRY_CAST(target_value AS DECIMAL(18,6))         AS target_value,
+        TRIM(limit_text)                                AS limit_text,
+        TRIM(limit_expression)                          AS limit_expression,
+
+        TRIM(ctd_section)                               AS ctd_section,
+        TRIM(compendia_reference)                       AS compendia_reference,
+        TRIM(regulatory_basis)                          AS regulatory_basis,
+        CASE UPPER(TRIM(stage))
+            WHEN 'RELEASE'   THEN 'RELEASE'
+            WHEN 'STABILITY' THEN 'STABILITY'
+            WHEN 'IPC'       THEN 'IPC'
+            ELSE UPPER(TRIM(stage))
+        END                                             AS stage_code,
+        UPPER(TRIM(stability_condition))                AS stability_condition,
+
+        TRY_CAST(effective_date AS DATE)                AS effective_date,
+        TRY_CAST(approval_date AS DATE)                 AS approval_date,
+        TRIM(approved_by)                               AS approved_by,
+
+        CASE WHEN spec_number IS NOT NULL THEN TRUE ELSE FALSE END AS dq_spec_number_present,
+        CASE WHEN TRY_CAST(lower_limit AS DECIMAL(18,6)) IS NULL AND lower_limit IS NOT NULL THEN TRUE ELSE FALSE END AS dq_numeric_cast_error,
+        CASE WHEN TRY_CAST(effective_date AS DATE) IS NULL AND effective_date IS NOT NULL THEN TRUE ELSE FALSE END AS dq_date_parse_error,
+        TRUE                                            AS dq_limit_type_mapped,
+        CURRENT_TIMESTAMP()                             AS load_timestamp,
+        TRUE                                            AS is_current
+    FROM l1_raw.raw_pdf_specification
+    WHERE document_id IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY document_id, COALESCE(test_code, test_name), COALESCE(limit_type, 'AC'), COALESCE(stage, 'Release')
+        ORDER BY _ingestion_timestamp DESC
+    ) = 1
+) AS src
+ON tgt.source_row_key = src.source_row_key
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L2.1 Counts
 
 -- COMMAND ----------
@@ -303,4 +404,6 @@ SELECT 'src_lims_spec_item', COUNT(*) FROM l2_1_lims.src_lims_spec_item
 UNION ALL
 SELECT 'src_lims_spec_limit', COUNT(*) FROM l2_1_lims.src_lims_spec_limit
 UNION ALL
-SELECT 'src_process_recipe', COUNT(*) FROM l2_1_lims.src_process_recipe;
+SELECT 'src_process_recipe', COUNT(*) FROM l2_1_lims.src_process_recipe
+UNION ALL
+SELECT 'src_pdf_specification', COUNT(*) FROM l2_1_lims.src_pdf_specification;
