@@ -12,6 +12,9 @@
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l1_raw;
 
 -- COMMAND ----------

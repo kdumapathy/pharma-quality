@@ -7,6 +7,9 @@
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l2_2_spec_unified;
 
 -- COMMAND ----------

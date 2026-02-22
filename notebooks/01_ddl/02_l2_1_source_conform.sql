@@ -11,6 +11,9 @@
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l2_1_lims;
 
 -- COMMAND ----------
