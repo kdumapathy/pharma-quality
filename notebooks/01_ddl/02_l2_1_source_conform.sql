@@ -1,12 +1,15 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # L2.1 Source Conform Tables — LIMS
--- MAGIC Cleansed, typed, and deduplicated tables from LIMS raw layer.
+-- MAGIC # L2.1 Source Conform Tables — All Sources
+-- MAGIC Cleansed, typed, and deduplicated tables from all raw layer sources.
 -- MAGIC
 -- MAGIC **Tables:**
--- MAGIC - `src_lims_specification` — Specifications (deduplicated, typed)
--- MAGIC - `src_lims_spec_item` — Spec items (deduplicated, typed)
--- MAGIC - `src_lims_spec_limit` — Spec limits (deduplicated, typed)
+-- MAGIC - `src_lims_specification` — Specifications (LIMS, deduplicated, typed)
+-- MAGIC - `src_lims_spec_item` — Spec items (LIMS, deduplicated, typed)
+-- MAGIC - `src_lims_spec_limit` — Spec limits (LIMS, deduplicated, typed)
+-- MAGIC - `src_process_recipe` — Process recipe limits (Recipe, typed)
+-- MAGIC - `src_pdf_specification` — PDF/SOP specifications (typed)
+-- MAGIC - `src_vendor_analytical_results` — Vendor/Excel analytical results (typed)
 
 -- COMMAND ----------
 
@@ -178,6 +181,269 @@ TBLPROPERTIES (
     'quality.layer'                     = 'L2.1',
     'quality.source'                    = 'LIMS',
     'quality.source_raw_table'          = 'l1_raw.raw_lims_spec_limit'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### src_process_recipe
+-- MAGIC Cleansed, typed process recipe limits with standardized codes.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_1_lims.src_process_recipe
+(
+    source_recipe_id            STRING          NOT NULL    COMMENT 'Recipe system natural key',
+    source_specification_id     STRING                      COMMENT 'Linked LIMS specification ID',
+    source_spec_item_id         STRING                      COMMENT 'Linked LIMS spec item ID',
+    source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID',
+    source_ingestion_timestamp  TIMESTAMP       NOT NULL    COMMENT 'Ingestion timestamp',
+    record_hash                 STRING                      COMMENT 'SHA-256 for CDC',
+
+    recipe_name                 STRING          NOT NULL    COMMENT 'Recipe name (trimmed)',
+    recipe_version              STRING                      COMMENT 'Recipe version',
+    recipe_type                 STRING                      COMMENT 'Mapped: MANUFACTURING|PACKAGING|CLEANING',
+    parameter_code              STRING                      COMMENT 'Parameter code (cleansed)',
+    parameter_name              STRING          NOT NULL    COMMENT 'Parameter name (trimmed)',
+
+    product_id_recipe           STRING                      COMMENT 'Product ID from recipe system (pre-MDM)',
+    product_name                STRING                      COMMENT 'Product name (trimmed)',
+    material_id_recipe          STRING                      COMMENT 'Material ID from recipe system (pre-MDM)',
+    material_name               STRING                      COMMENT 'Material name (trimmed)',
+    site_id_recipe              STRING                      COMMENT 'Site ID from recipe system (pre-MDM)',
+    site_name                   STRING                      COMMENT 'Site name (trimmed)',
+
+    limit_type_code             STRING          NOT NULL    COMMENT 'Mapped: NOR|PAR|TARGET|ALERT|ACTION|IPC_LIMIT',
+    lower_limit_value           DECIMAL(18, 6)              COMMENT 'Lower limit (cast from string)',
+    upper_limit_value           DECIMAL(18, 6)              COMMENT 'Upper limit (cast from string)',
+    target_value                DECIMAL(18, 6)              COMMENT 'Target value (cast)',
+    uom_code                    STRING                      COMMENT 'Unit code (standardized against dim_uom)',
+    limit_basis                 STRING                      COMMENT 'Mapped: AS_IS|ANHYDROUS|AS_LABELED|DRIED_BASIS',
+    stage_code                  STRING                      COMMENT 'Mapped: DEV|CLI|COM',
+
+    calculation_method          STRING                      COMMENT 'SPC method: 3_SIGMA|CPK|EWMA|CUSUM|MANUAL',
+    sample_size                 INT                         COMMENT 'Sample size (cast)',
+    cpk_value                   DECIMAL(8, 4)               COMMENT 'Process capability index (cast)',
+    last_calculated_date        DATE                        COMMENT 'SPC recalculation date (cast)',
+
+    effective_start_date        DATE                        COMMENT 'Effective start date (cast)',
+    effective_end_date          DATE                        COMMENT 'Effective end date (cast)',
+
+    dq_limit_type_mapped        BOOLEAN                     COMMENT 'TRUE if limit_type_code mapped successfully',
+    dq_numeric_cast_error       BOOLEAN                     COMMENT 'TRUE if any numeric cast failed',
+    dq_date_parse_error         BOOLEAN                     COMMENT 'TRUE if any date parse failed',
+    dq_spec_link_valid          BOOLEAN                     COMMENT 'TRUE if specification_id exists in LIMS source',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'L2.1 load timestamp',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Latest version flag'
+)
+USING DELTA
+PARTITIONED BY (limit_type_code)
+COMMENT 'L2.1 Source conform: Process recipe limits. Typed, standardized.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L2.1',
+    'quality.source'                    = 'RECIPE',
+    'quality.source_raw_table'          = 'l1_raw.raw_process_recipe'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### src_pdf_specification
+-- MAGIC Cleansed, typed specification data from transcribed PDF/SOP documents.
+-- MAGIC Denormalized: one row per test-limit extracted from the document.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_1_lims.src_pdf_specification
+(
+    -- Source identity
+    source_document_id          STRING          NOT NULL    COMMENT 'Document natural key',
+    source_row_key              STRING          NOT NULL    COMMENT 'Unique row key (document_id + test_code + limit_type)',
+    source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID',
+    source_ingestion_timestamp  TIMESTAMP       NOT NULL    COMMENT 'Ingestion timestamp',
+    record_hash                 STRING                      COMMENT 'SHA-256 for CDC',
+
+    -- Document provenance
+    document_name               STRING          NOT NULL    COMMENT 'Document title (trimmed)',
+    document_version            STRING                      COMMENT 'Document revision',
+    document_type               STRING                      COMMENT 'Mapped: SOP|SPEC_SHEET|REGULATORY|CERTIFICATE',
+    sop_number                  STRING                      COMMENT 'SOP number (trimmed)',
+    page_number                 INT                         COMMENT 'Page number (cast)',
+    section_reference           STRING                      COMMENT 'Section heading (trimmed)',
+    transcription_date          DATE                        COMMENT 'Transcription date (cast)',
+    transcribed_by              STRING                      COMMENT 'Transcriber',
+
+    -- Specification header
+    spec_number                 STRING                      COMMENT 'Specification number (cleansed)',
+    spec_version                STRING                      COMMENT 'Version (standardized)',
+    spec_title                  STRING                      COMMENT 'Title (trimmed)',
+    spec_type_code              STRING                      COMMENT 'Mapped: DS|DP|RM|EXCIP|INTERMED|IPC|CCS',
+
+    -- Product / Material
+    product_id_pdf              STRING                      COMMENT 'Product ID from document (pre-MDM)',
+    product_name                STRING                      COMMENT 'Product name (trimmed)',
+    material_id_pdf             STRING                      COMMENT 'Material ID from document (pre-MDM)',
+    material_name               STRING                      COMMENT 'Material name (trimmed)',
+    site_name                   STRING                      COMMENT 'Site name (trimmed)',
+    market_region               STRING                      COMMENT 'Market region (standardized)',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code (cleansed)',
+    test_name                   STRING          NOT NULL    COMMENT 'Test name (trimmed)',
+    test_category_code          STRING                      COMMENT 'Mapped: PHY|CHE|IMP|MIC|BIO|STER|PACK',
+    test_method_reference       STRING                      COMMENT 'Method reference (trimmed)',
+    uom_code                    STRING                      COMMENT 'Unit code (standardized)',
+    criticality_code            STRING                      COMMENT 'Mapped: CQA|CCQA|NCQA|KQA|REPORT',
+
+    -- Limit
+    limit_type_code             STRING          NOT NULL    COMMENT 'Mapped: AC|NOR|PAR|ALERT|ACTION|REPORT',
+    lower_limit_value           DECIMAL(18, 6)              COMMENT 'Lower limit (cast)',
+    upper_limit_value           DECIMAL(18, 6)              COMMENT 'Upper limit (cast)',
+    target_value                DECIMAL(18, 6)              COMMENT 'Target value (cast)',
+    limit_text                  STRING                      COMMENT 'Qualitative limit text (trimmed)',
+    limit_expression            STRING                      COMMENT 'Full limit expression as written in document',
+
+    -- Regulatory
+    ctd_section                 STRING                      COMMENT 'CTD section (standardized)',
+    compendia_reference         STRING                      COMMENT 'Compendia reference (trimmed)',
+    regulatory_basis            STRING                      COMMENT 'Regulatory basis (trimmed)',
+    stage_code                  STRING                      COMMENT 'Mapped: RELEASE|STABILITY|IPC|BOTH',
+    stability_condition         STRING                      COMMENT 'Stability condition (standardized)',
+
+    -- Dates
+    effective_date              DATE                        COMMENT 'Effective date (cast)',
+    approval_date               DATE                        COMMENT 'Approval date (cast)',
+    approved_by                 STRING                      COMMENT 'Approver (trimmed)',
+
+    -- DQ flags
+    dq_spec_number_present      BOOLEAN                     COMMENT 'TRUE if spec_number was present',
+    dq_numeric_cast_error       BOOLEAN                     COMMENT 'TRUE if any numeric cast failed',
+    dq_date_parse_error         BOOLEAN                     COMMENT 'TRUE if any date parse failed',
+    dq_limit_type_mapped        BOOLEAN                     COMMENT 'TRUE if limit_type_code mapped successfully',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'L2.1 load timestamp',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Latest version flag'
+)
+USING DELTA
+PARTITIONED BY (limit_type_code)
+COMMENT 'L2.1 Source conform: Transcribed PDF/SOP specification data. Typed, standardized.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L2.1',
+    'quality.source'                    = 'PDF',
+    'quality.source_raw_table'          = 'l1_raw.raw_pdf_specification'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### src_vendor_analytical_results
+-- MAGIC Cleansed, typed analytical test results from vendor/Excel stability studies.
+-- MAGIC One row per result (batch × test × condition × time point).
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_1_lims.src_vendor_analytical_results
+(
+    -- Source identity
+    source_result_id            STRING          NOT NULL    COMMENT 'Vendor result natural key',
+    source_sample_id            STRING                      COMMENT 'Sample identifier (cleansed)',
+    source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID',
+    source_ingestion_timestamp  TIMESTAMP       NOT NULL    COMMENT 'Ingestion timestamp',
+    record_hash                 STRING                      COMMENT 'SHA-256 for CDC',
+
+    -- Batch
+    batch_number                STRING          NOT NULL    COMMENT 'Manufacturing batch / lot number (trimmed)',
+    batch_system_id             STRING                      COMMENT 'Batch system ID (trimmed)',
+    manufacturing_date          DATE                        COMMENT 'Manufacturing date (cast)',
+    expiry_date                 DATE                        COMMENT 'Expiry date (cast)',
+    batch_size                  DECIMAL(18, 4)              COMMENT 'Batch size (cast)',
+    batch_size_unit             STRING                      COMMENT 'Batch size unit (standardized)',
+
+    -- Product / Material
+    product_id_vendor           STRING                      COMMENT 'Product ID from vendor (pre-MDM)',
+    product_name                STRING                      COMMENT 'Product name (trimmed)',
+    material_id_vendor          STRING                      COMMENT 'Material ID from vendor (pre-MDM)',
+    material_name               STRING                      COMMENT 'Material name (trimmed)',
+    dosage_form                 STRING                      COMMENT 'Dosage form (cleansed)',
+    strength                    STRING                      COMMENT 'Product strength',
+
+    -- Specification linkage
+    source_specification_id     STRING                      COMMENT 'Linked specification ID (pre-MDM)',
+    source_spec_item_id         STRING                      COMMENT 'Linked spec item ID (pre-MDM)',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code (cleansed, upper)',
+    test_name                   STRING          NOT NULL    COMMENT 'Test name (trimmed)',
+    test_category_code          STRING                      COMMENT 'Mapped: PHY|CHE|IMP|MIC|BIO|STER|PACK',
+    test_method_id_vendor       STRING                      COMMENT 'Method ID from vendor (pre-MDM)',
+    test_method_name            STRING                      COMMENT 'Method name (trimmed)',
+
+    -- Stability Context
+    stability_study_id          STRING                      COMMENT 'Stability study identifier (trimmed)',
+    storage_condition_code      STRING                      COMMENT 'Standardized: 25C60RH|30C65RH|40C75RH|5C|REFRIG|FREEZER',
+    time_point_code             STRING                      COMMENT 'Standardized: T0|T1M|T3M|T6M|T9M|T12M|T18M|T24M|T36M',
+    time_point_months           INT                         COMMENT 'Time point in months (cast)',
+    pull_date                   DATE                        COMMENT 'Sample pull date (cast)',
+
+    -- Result Values
+    result_value                DECIMAL(18, 6)              COMMENT 'Numeric result (cast)',
+    result_text                 STRING                      COMMENT 'Text result (trimmed)',
+    uom_code                    STRING                      COMMENT 'Unit code (standardized against dim_uom)',
+    result_status_code          STRING                      COMMENT 'Mapped: PASS|FAIL|OOS|OOT|PENDING|REPORT',
+
+    -- Reported Limits
+    reported_lower_limit        DECIMAL(18, 6)              COMMENT 'Vendor-reported lower limit (cast)',
+    reported_upper_limit        DECIMAL(18, 6)              COMMENT 'Vendor-reported upper limit (cast)',
+    reported_target             DECIMAL(18, 6)              COMMENT 'Vendor-reported target (cast)',
+
+    -- Instrument
+    instrument_id_vendor        STRING                      COMMENT 'Instrument ID from vendor',
+    instrument_name             STRING                      COMMENT 'Instrument name (trimmed)',
+
+    -- Personnel
+    analyst_name                STRING                      COMMENT 'Analyst (trimmed)',
+    reviewer_name               STRING                      COMMENT 'Reviewer (trimmed)',
+
+    -- Site / Lab
+    site_id_vendor              STRING                      COMMENT 'Site ID from vendor (pre-MDM)',
+    site_name                   STRING                      COMMENT 'Site name (trimmed)',
+    lab_id                      STRING                      COMMENT 'Lab ID (trimmed)',
+    lab_name                    STRING                      COMMENT 'Lab name (trimmed)',
+
+    -- Document / Report
+    report_id                   STRING                      COMMENT 'Analytical report / CoA ID (trimmed)',
+    report_name                 STRING                      COMMENT 'Report name (trimmed)',
+    coa_number                  STRING                      COMMENT 'Certificate of Analysis number (trimmed)',
+
+    -- Dates
+    test_date                   DATE                        COMMENT 'Test date (cast)',
+    review_date                 DATE                        COMMENT 'Review date (cast)',
+    approval_date               DATE                        COMMENT 'Approval date (cast)',
+
+    -- DQ flags
+    dq_numeric_cast_error       BOOLEAN                     COMMENT 'TRUE if result_value cast failed',
+    dq_date_parse_error         BOOLEAN                     COMMENT 'TRUE if any date parse failed',
+    dq_condition_mapped         BOOLEAN                     COMMENT 'TRUE if storage_condition_code mapped successfully',
+    dq_timepoint_mapped         BOOLEAN                     COMMENT 'TRUE if time_point_code mapped successfully',
+    dq_spec_link_valid          BOOLEAN                     COMMENT 'TRUE if specification_id exists in LIMS source',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'L2.1 load timestamp',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Latest version flag'
+)
+USING DELTA
+PARTITIONED BY (storage_condition_code)
+COMMENT 'L2.1 Source conform: Vendor/Excel analytical results. Typed, standardized.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.1',
+    'quality.source'                    = 'VENDOR_EXCEL',
+    'quality.source_raw_table'          = 'l1_raw.raw_vendor_analytical_results'
 );
 
 -- COMMAND ----------
