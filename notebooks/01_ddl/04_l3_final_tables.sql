@@ -10,6 +10,9 @@
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l3_spec_products;
 
 -- COMMAND ----------
