@@ -33,8 +33,6 @@ USING (
         p.product_name,
         m.material_name,
         st.site_name,
-        mk.country_code,
-        mk.country_name,
         mk.market_status,
         s.status_code,
         s.stage_code,
@@ -49,15 +47,15 @@ USING (
         i.is_required,
         MAX(CASE WHEN lt.limit_type_code = 'AC'     THEN f.lower_limit_value END)  AS ac_lower_limit,
         MAX(CASE WHEN lt.limit_type_code = 'AC'     THEN f.upper_limit_value END)  AS ac_upper_limit,
-        MAX(CASE WHEN lt.limit_type_code = 'AC'     THEN f.target_value END)       AS ac_target_value,
+        MAX(CASE WHEN lt.limit_type_code = 'AC'     THEN f.target_value END)       AS ac_target,
         MAX(CASE WHEN lt.limit_type_code = 'AC'     THEN f.limit_description END)  AS ac_limit_description,
         MAX(CASE WHEN lt.limit_type_code = 'NOR'    THEN f.lower_limit_value END)  AS nor_lower_limit,
         MAX(CASE WHEN lt.limit_type_code = 'NOR'    THEN f.upper_limit_value END)  AS nor_upper_limit,
-        MAX(CASE WHEN lt.limit_type_code = 'NOR'    THEN f.target_value END)       AS nor_target_value,
+        MAX(CASE WHEN lt.limit_type_code = 'NOR'    THEN f.target_value END)       AS nor_target,
         MAX(CASE WHEN lt.limit_type_code = 'NOR'    THEN f.limit_description END)  AS nor_limit_description,
         MAX(CASE WHEN lt.limit_type_code = 'PAR'    THEN f.lower_limit_value END)  AS par_lower_limit,
         MAX(CASE WHEN lt.limit_type_code = 'PAR'    THEN f.upper_limit_value END)  AS par_upper_limit,
-        MAX(CASE WHEN lt.limit_type_code = 'PAR'    THEN f.target_value END)       AS par_target_value,
+        MAX(CASE WHEN lt.limit_type_code = 'PAR'    THEN f.target_value END)       AS par_target,
         MAX(CASE WHEN lt.limit_type_code = 'PAR'    THEN f.limit_description END)  AS par_limit_description,
         MAX(CASE WHEN lt.limit_type_code = 'ALERT'  THEN f.lower_limit_value END)  AS alert_lower_limit,
         MAX(CASE WHEN lt.limit_type_code = 'ALERT'  THEN f.upper_limit_value END)  AS alert_upper_limit,
@@ -100,7 +98,7 @@ USING (
     GROUP BY
         s.spec_key, i.spec_item_key,
         s.spec_number, s.spec_version, s.spec_title, s.spec_type_code, s.spec_type_name,
-        p.product_name, m.material_name, st.site_name, mk.country_code, mk.country_name, mk.market_status,
+        p.product_name, m.material_name, st.site_name, mk.market_status,
         s.status_code, s.stage_code, p.strength,
         i.test_name, i.test_code, i.test_category_code, i.criticality,
         u.uom_code, i.sequence_number, i.reporting_type, i.is_required,
@@ -118,8 +116,6 @@ WHEN MATCHED THEN UPDATE SET
     product_name = src.product_name,
     material_name = src.material_name,
     site_name = src.site_name,
-    country_code = src.country_code,
-    country_name = src.country_name,
     market_status = src.market_status,
     status_code = src.status_code,
     stage_code = src.stage_code,
@@ -134,15 +130,15 @@ WHEN MATCHED THEN UPDATE SET
     is_required = src.is_required,
     ac_lower_limit = src.ac_lower_limit,
     ac_upper_limit = src.ac_upper_limit,
-    ac_target_value = src.ac_target_value,
+    ac_target = src.ac_target,
     ac_limit_description = src.ac_limit_description,
     nor_lower_limit = src.nor_lower_limit,
     nor_upper_limit = src.nor_upper_limit,
-    nor_target_value = src.nor_target_value,
+    nor_target = src.nor_target,
     nor_limit_description = src.nor_limit_description,
     par_lower_limit = src.par_lower_limit,
     par_upper_limit = src.par_upper_limit,
-    par_target_value = src.par_target_value,
+    par_target = src.par_target,
     par_limit_description = src.par_limit_description,
     alert_lower_limit = src.alert_lower_limit,
     alert_upper_limit = src.alert_upper_limit,
@@ -153,7 +149,12 @@ WHEN MATCHED THEN UPDATE SET
     is_hierarchy_valid = src.is_hierarchy_valid,
     is_current = src.is_current,
     load_timestamp = src.load_timestamp
-WHEN NOT MATCHED THEN INSERT *;
+WHEN NOT MATCHED THEN INSERT (
+    spec_key, spec_item_key, spec_number, spec_version, spec_title, spec_type_code, spec_type_name, product_name, material_name, site_name, market_status, status_code, stage_code, strength, test_name, test_code, test_category_code, criticality, uom_code, sequence_number, reporting_type, is_required, ac_lower_limit, ac_upper_limit, ac_target, ac_limit_description, nor_lower_limit, nor_upper_limit, nor_target, nor_limit_description, par_lower_limit, par_upper_limit, par_target, par_limit_description, alert_lower_limit, alert_upper_limit, alert_limit_description, action_lower_limit, action_upper_limit, action_limit_description, is_hierarchy_valid, is_current, load_timestamp
+)
+VALUES (
+    src.spec_key, src.spec_item_key, src.spec_number, src.spec_version, src.spec_title, src.spec_type_code, src.spec_type_name, src.product_name, src.material_name, src.site_name, src.market_status, src.status_code, src.stage_code, src.strength, src.test_name, src.test_code, src.test_category_code, src.criticality, src.uom_code, src.sequence_number, src.reporting_type, src.is_required, src.ac_lower_limit, src.ac_upper_limit, src.ac_target, src.ac_limit_description, src.nor_lower_limit, src.nor_upper_limit, src.nor_target, src.nor_limit_description, src.par_lower_limit, src.par_upper_limit, src.par_target, src.par_limit_description, src.alert_lower_limit, src.alert_upper_limit, src.alert_limit_description, src.action_lower_limit, src.action_upper_limit, src.action_limit_description, src.is_hierarchy_valid, src.is_current, src.load_timestamp
+);
 
 -- COMMAND ----------
 
