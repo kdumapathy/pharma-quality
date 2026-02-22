@@ -7,6 +7,8 @@
 -- MAGIC **Sources seeded:**
 -- MAGIC - LIMS — One drug product specification (Acetaminophen 500 mg Tablet) with AC limits
 -- MAGIC - Process Recipe — NOR, PAR, and Target limits for the same specification
+-- MAGIC - PDF/SOP — Ibuprofen 200 mg Tablet specification transcribed from SOP document
+-- MAGIC - Vendor/Excel — Stability study results for Acetaminophen 500 mg (Batch B2025-001, Long-term + Accelerated)
 
 -- COMMAND ----------
 
@@ -232,6 +234,191 @@ INSERT INTO l1_raw.raw_pdf_specification VALUES
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## L1 Raw — Vendor/Excel Analytical Results (Stability Study)
+-- MAGIC Stability study results for Acetaminophen 500 mg Tablets (Batch B2025-001).
+-- MAGIC Long-term (25°C/60%RH) and accelerated (40°C/75%RH) at T0, T3M, T6M, T12M.
+
+-- COMMAND ----------
+
+INSERT INTO l1_raw.raw_vendor_analytical_results VALUES
+    -- ===== ASSAY — Long-term 25C/60%RH =====
+    -- T0
+    ('ving-001','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh001',
+     'RES-001','SMP-001','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','25C/60%RH','T0','0','2025-01-20',
+     '99.8',NULL,'%','PASS','95.0','105.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001','CoA-B2025-001-T0',
+     '2025-01-20','2025-01-22','2025-01-23','2025-01-20','2025-01-20'),
+    -- T3M
+    ('ving-002','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh002',
+     'RES-002','SMP-002','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','25C/60%RH','T3M','3','2025-04-20',
+     '99.5',NULL,'%','PASS','95.0','105.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-04-20','2025-04-22','2025-04-23','2025-04-20','2025-04-20'),
+    -- T6M
+    ('ving-003','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh003',
+     'RES-003','SMP-003','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','25C/60%RH','T6M','6','2025-07-20',
+     '99.1',NULL,'%','PASS','95.0','105.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-07-20','2025-07-22','2025-07-23','2025-07-20','2025-07-20'),
+    -- T12M
+    ('ving-004','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh004',
+     'RES-004','SMP-004','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','25C/60%RH','T12M','12','2026-01-20',
+     '98.5',NULL,'%','PASS','95.0','105.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2026-01-20','2026-01-22','2026-01-23','2026-01-20','2026-01-20'),
+
+    -- ===== ASSAY — Accelerated 40C/75%RH =====
+    -- T0 (same as long-term T0)
+    ('ving-005','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh005',
+     'RES-005','SMP-005','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','40C/75%RH','T0','0','2025-01-20',
+     '99.8',NULL,'%','PASS','90.0','110.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-01-20','2025-01-22','2025-01-23','2025-01-20','2025-01-20'),
+    -- T3M
+    ('ving-006','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh006',
+     'RES-006','SMP-006','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','40C/75%RH','T3M','3','2025-04-20',
+     '98.2',NULL,'%','PASS','90.0','110.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-04-20','2025-04-22','2025-04-23','2025-04-20','2025-04-20'),
+    -- T6M
+    ('ving-007','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh007',
+     'RES-007','SMP-007','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-001','ASSAY','Assay','Chemical','MTH-001','USP <621>',
+     'STAB-001','40C/75%RH','T6M','6','2025-07-20',
+     '96.8',NULL,'%','PASS','90.0','110.0','100.0',
+     'HPLC-001','Agilent 1260 HPLC','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-07-20','2025-07-22','2025-07-23','2025-07-20','2025-07-20'),
+
+    -- ===== DISSOLUTION — Long-term 25C/60%RH =====
+    -- T0
+    ('ving-008','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh008',
+     'RES-008','SMP-008','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-002','DISSO','Dissolution','Physical','MTH-002','USP <711>',
+     'STAB-001','25C/60%RH','T0','0','2025-01-20',
+     '92.0',NULL,'% (Q)','PASS','80.0',NULL,NULL,
+     'DISSO-001','Sotax AT7 Smart','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-01-20','2025-01-22','2025-01-23','2025-01-20','2025-01-20'),
+    -- T6M
+    ('ving-009','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh009',
+     'RES-009','SMP-009','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-002','DISSO','Dissolution','Physical','MTH-002','USP <711>',
+     'STAB-001','25C/60%RH','T6M','6','2025-07-20',
+     '89.5',NULL,'% (Q)','PASS','80.0',NULL,NULL,
+     'DISSO-001','Sotax AT7 Smart','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-07-20','2025-07-22','2025-07-23','2025-07-20','2025-07-20'),
+    -- T12M
+    ('ving-010','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh010',
+     'RES-010','SMP-010','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-002','DISSO','Dissolution','Physical','MTH-002','USP <711>',
+     'STAB-001','25C/60%RH','T12M','12','2026-01-20',
+     '87.2',NULL,'% (Q)','PASS','80.0',NULL,NULL,
+     'DISSO-001','Sotax AT7 Smart','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2026-01-20','2026-01-22','2026-01-23','2026-01-20','2026-01-20'),
+
+    -- ===== IMPURITY A — Long-term 25C/60%RH =====
+    -- T0
+    ('ving-011','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh011',
+     'RES-011','SMP-011','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-004','IMPD','Impurity A','Chemical','MTH-004',NULL,
+     'STAB-001','25C/60%RH','T0','0','2025-01-20',
+     '0.05',NULL,'%','PASS',NULL,'0.15',NULL,
+     'HPLC-001','Agilent 1260 HPLC','J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-01-20','2025-01-22','2025-01-23','2025-01-20','2025-01-20'),
+    -- T6M
+    ('ving-012','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh012',
+     'RES-012','SMP-012','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-004','IMPD','Impurity A','Chemical','MTH-004',NULL,
+     'STAB-001','25C/60%RH','T6M','6','2025-07-20',
+     '0.08',NULL,'%','PASS',NULL,'0.15',NULL,
+     'HPLC-001','Agilent 1260 HPLC','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-07-20','2025-07-22','2025-07-23','2025-07-20','2025-07-20'),
+    -- T12M
+    ('ving-013','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh013',
+     'RES-013','SMP-013','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-004','IMPD','Impurity A','Chemical','MTH-004',NULL,
+     'STAB-001','25C/60%RH','T12M','12','2026-01-20',
+     '0.11',NULL,'%','PASS',NULL,'0.15',NULL,
+     'HPLC-001','Agilent 1260 HPLC','K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2026-01-20','2026-01-22','2026-01-23','2026-01-20','2026-01-20'),
+
+    -- ===== DESCRIPTION — Long-term 25C/60%RH =====
+    -- T0
+    ('ving-014','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh014',
+     'RES-014','SMP-014','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-006','DESC','Description','Physical',NULL,NULL,
+     'STAB-001','25C/60%RH','T0','0','2025-01-20',
+     NULL,'White to off-white film-coated tablets','N/A','PASS',NULL,NULL,NULL,
+     NULL,NULL,'J. Anderson','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2025-01-20','2025-01-22','2025-01-23','2025-01-20','2025-01-20'),
+    -- T12M
+    ('ving-015','VENDOR_EXCEL','Stability_B2025-001_Results.xlsx','VBATCH-2026-001',CURRENT_TIMESTAMP(),'vh015',
+     'RES-015','SMP-015','B2025-001','BATCH-SYS-001','2025-01-15','2027-01-14','500000','units',
+     'PROD-001','Acetaminophen 500 mg Tablets','MAT-001','Acetaminophen','Film-Coated Tablet','500 mg',
+     'SPEC-001','ITEM-006','DESC','Description','Physical',NULL,NULL,
+     'STAB-001','25C/60%RH','T12M','12','2026-01-20',
+     NULL,'White to off-white film-coated tablets','N/A','PASS',NULL,NULL,NULL,
+     NULL,NULL,'K. Patel','M. Chen',
+     'SITE-001','Springfield Plant','LAB-001','QC Lab A',
+     'RPT-STAB-001','Stability Report B2025-001',NULL,
+     '2026-01-20','2026-01-22','2026-01-23','2026-01-20','2026-01-20');
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify Raw Data Counts
 
 -- COMMAND ----------
@@ -244,4 +431,6 @@ SELECT 'raw_lims_spec_limit', COUNT(*) FROM l1_raw.raw_lims_spec_limit
 UNION ALL
 SELECT 'raw_process_recipe', COUNT(*) FROM l1_raw.raw_process_recipe
 UNION ALL
-SELECT 'raw_pdf_specification', COUNT(*) FROM l1_raw.raw_pdf_specification;
+SELECT 'raw_pdf_specification', COUNT(*) FROM l1_raw.raw_pdf_specification
+UNION ALL
+SELECT 'raw_vendor_analytical_results', COUNT(*) FROM l1_raw.raw_vendor_analytical_results;

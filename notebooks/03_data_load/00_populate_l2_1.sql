@@ -1,6 +1,6 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # Populate L2.1 Source Conform — LIMS + Recipe
+-- MAGIC # Populate L2.1 Source Conform — All Sources
 -- MAGIC Transforms L1 raw data into L2.1 cleansed, typed, deduplicated tables.
 -- MAGIC
 -- MAGIC **Sources:**
@@ -8,6 +8,8 @@
 -- MAGIC - `raw_lims_spec_item` → `src_lims_spec_item`
 -- MAGIC - `raw_lims_spec_limit` → `src_lims_spec_limit`
 -- MAGIC - `raw_process_recipe` → `src_process_recipe`
+-- MAGIC - `raw_pdf_specification` → `src_pdf_specification`
+-- MAGIC - `raw_vendor_analytical_results` → `src_vendor_analytical_results`
 
 -- COMMAND ----------
 
@@ -394,6 +396,118 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## src_vendor_analytical_results
+-- MAGIC Transforms vendor/Excel analytical results from L1 raw into typed, standardized rows.
+
+-- COMMAND ----------
+
+MERGE INTO l2_1_lims.src_vendor_analytical_results AS tgt
+USING (
+    SELECT
+        result_id                                       AS source_result_id,
+        TRIM(sample_id)                                 AS source_sample_id,
+        _batch_id                                       AS source_batch_id,
+        _ingestion_timestamp                            AS source_ingestion_timestamp,
+        _record_hash                                    AS record_hash,
+
+        TRIM(batch_number)                              AS batch_number,
+        TRIM(batch_id)                                  AS batch_system_id,
+        TRY_CAST(manufacturing_date AS DATE)            AS manufacturing_date,
+        TRY_CAST(expiry_date AS DATE)                   AS expiry_date,
+        TRY_CAST(batch_size AS DECIMAL(18,4))           AS batch_size,
+        UPPER(TRIM(batch_size_unit))                    AS batch_size_unit,
+
+        TRIM(product_id)                                AS product_id_vendor,
+        TRIM(product_name)                              AS product_name,
+        TRIM(material_id)                               AS material_id_vendor,
+        TRIM(material_name)                             AS material_name,
+        TRIM(dosage_form)                               AS dosage_form,
+        TRIM(strength)                                  AS strength,
+
+        TRIM(specification_id)                          AS source_specification_id,
+        TRIM(spec_item_id)                              AS source_spec_item_id,
+
+        UPPER(TRIM(test_code))                          AS test_code,
+        TRIM(test_name)                                 AS test_name,
+        CASE UPPER(TRIM(test_category))
+            WHEN 'PHYSICAL'         THEN 'PHY'
+            WHEN 'CHEMICAL'         THEN 'CHE'
+            WHEN 'IMPURITY'         THEN 'IMP'
+            WHEN 'MICROBIOLOGICAL'  THEN 'MIC'
+            WHEN 'BIOLOGICAL'       THEN 'BIO'
+            WHEN 'STERILITY'        THEN 'STER'
+            WHEN 'PACKAGING'        THEN 'PACK'
+            ELSE UPPER(TRIM(test_category))
+        END                                             AS test_category_code,
+        TRIM(test_method_id)                            AS test_method_id_vendor,
+        TRIM(test_method_name)                          AS test_method_name,
+
+        TRIM(stability_study_id)                        AS stability_study_id,
+        CASE UPPER(REPLACE(TRIM(storage_condition), ' ', ''))
+            WHEN '25C/60%RH'   THEN '25C60RH'
+            WHEN '25C60RH'     THEN '25C60RH'
+            WHEN '30C/65%RH'   THEN '30C65RH'
+            WHEN '30C65RH'     THEN '30C65RH'
+            WHEN '40C/75%RH'   THEN '40C75RH'
+            WHEN '40C75RH'     THEN '40C75RH'
+            WHEN '5C'          THEN '5C'
+            WHEN 'REFRIGERATED' THEN 'REFRIG'
+            WHEN 'FREEZER'     THEN 'FREEZER'
+            ELSE UPPER(REPLACE(TRIM(storage_condition), ' ', ''))
+        END                                             AS storage_condition_code,
+        UPPER(TRIM(time_point_code))                    AS time_point_code,
+        TRY_CAST(time_point_months AS INT)              AS time_point_months,
+        TRY_CAST(pull_date AS DATE)                     AS pull_date,
+
+        TRY_CAST(result_value AS DECIMAL(18,6))         AS result_value,
+        TRIM(result_text)                               AS result_text,
+        TRIM(result_unit)                               AS uom_code,
+        UPPER(TRIM(result_status))                      AS result_status_code,
+
+        TRY_CAST(reported_lower_limit AS DECIMAL(18,6)) AS reported_lower_limit,
+        TRY_CAST(reported_upper_limit AS DECIMAL(18,6)) AS reported_upper_limit,
+        TRY_CAST(reported_target AS DECIMAL(18,6))      AS reported_target,
+
+        TRIM(instrument_id)                             AS instrument_id_vendor,
+        TRIM(instrument_name)                           AS instrument_name,
+
+        TRIM(analyst_name)                              AS analyst_name,
+        TRIM(reviewer_name)                             AS reviewer_name,
+
+        TRIM(site_id)                                   AS site_id_vendor,
+        TRIM(site_name)                                 AS site_name,
+        TRIM(lab_id)                                    AS lab_id,
+        TRIM(lab_name)                                  AS lab_name,
+
+        TRIM(report_id)                                 AS report_id,
+        TRIM(report_name)                               AS report_name,
+        TRIM(coa_number)                                AS coa_number,
+
+        TRY_CAST(test_date AS DATE)                     AS test_date,
+        TRY_CAST(review_date AS DATE)                   AS review_date,
+        TRY_CAST(approval_date AS DATE)                 AS approval_date,
+
+        CASE WHEN TRY_CAST(result_value AS DECIMAL(18,6)) IS NULL AND result_value IS NOT NULL THEN TRUE ELSE FALSE END AS dq_numeric_cast_error,
+        CASE WHEN TRY_CAST(test_date AS DATE) IS NULL AND test_date IS NOT NULL THEN TRUE ELSE FALSE END AS dq_date_parse_error,
+        TRUE                                            AS dq_condition_mapped,
+        TRUE                                            AS dq_timepoint_mapped,
+        CASE WHEN specification_id IS NOT NULL THEN TRUE ELSE FALSE END AS dq_spec_link_valid,
+        CURRENT_TIMESTAMP()                             AS load_timestamp,
+        TRUE                                            AS is_current
+    FROM l1_raw.raw_vendor_analytical_results
+    WHERE result_id IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY result_id
+        ORDER BY _ingestion_timestamp DESC
+    ) = 1
+) AS src
+ON tgt.source_result_id = src.source_result_id
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L2.1 Counts
 
 -- COMMAND ----------
@@ -406,4 +520,6 @@ SELECT 'src_lims_spec_limit', COUNT(*) FROM l2_1_lims.src_lims_spec_limit
 UNION ALL
 SELECT 'src_process_recipe', COUNT(*) FROM l2_1_lims.src_process_recipe
 UNION ALL
-SELECT 'src_pdf_specification', COUNT(*) FROM l2_1_lims.src_pdf_specification;
+SELECT 'src_pdf_specification', COUNT(*) FROM l2_1_lims.src_pdf_specification
+UNION ALL
+SELECT 'src_vendor_analytical_results', COUNT(*) FROM l2_1_lims.src_vendor_analytical_results;

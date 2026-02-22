@@ -411,6 +411,130 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## dim_batch
+-- MAGIC Manufacturing batch dimension from vendor analytical results.
+
+-- COMMAND ----------
+
+MERGE INTO dim_batch AS tgt
+USING (
+    SELECT DISTINCT
+        HASH(v.batch_number)                AS batch_key,
+        v.batch_number,
+        v.batch_system_id,
+        HASH(v.product_id_vendor)           AS product_key,
+        HASH(v.site_id_vendor)              AS site_key,
+        v.manufacturing_date,
+        v.expiry_date,
+        v.batch_size,
+        v.batch_size_unit,
+        CAST(NULL AS STRING)                AS batch_status,
+        TRUE                                AS is_active,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
+    FROM l2_1_lims.src_vendor_analytical_results v
+    WHERE v.is_current = TRUE AND v.batch_number IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.batch_number ORDER BY v.source_ingestion_timestamp DESC) = 1
+) AS src
+ON tgt.batch_key = src.batch_key
+WHEN MATCHED THEN UPDATE SET
+    batch_system_id = src.batch_system_id,
+    manufacturing_date = src.manufacturing_date,
+    expiry_date = src.expiry_date,
+    batch_size = src.batch_size,
+    batch_size_unit = src.batch_size_unit,
+    load_timestamp = src.load_timestamp
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## dim_instrument
+-- MAGIC Analytical instrument dimension from vendor analytical results.
+
+-- COMMAND ----------
+
+MERGE INTO dim_instrument AS tgt
+USING (
+    SELECT DISTINCT
+        HASH(v.instrument_id_vendor)        AS instrument_key,
+        v.instrument_id_vendor              AS instrument_id,
+        v.instrument_name,
+        CAST(NULL AS STRING)                AS instrument_type,
+        TRUE                                AS is_active,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
+    FROM l2_1_lims.src_vendor_analytical_results v
+    WHERE v.is_current = TRUE AND v.instrument_id_vendor IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.instrument_id_vendor ORDER BY v.source_ingestion_timestamp DESC) = 1
+) AS src
+ON tgt.instrument_key = src.instrument_key
+WHEN MATCHED THEN UPDATE SET
+    instrument_name = src.instrument_name, load_timestamp = src.load_timestamp
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## fact_analytical_result
+-- MAGIC Analytical test results from vendor sources, linked to specification dims.
+
+-- COMMAND ----------
+
+MERGE INTO fact_analytical_result AS tgt
+USING (
+    SELECT
+        HASH(v.source_result_id, 'VENDOR')  AS analytical_result_key,
+        HASH(v.batch_number)                 AS batch_key,
+        HASH(v.source_specification_id)      AS spec_key,
+        HASH(v.source_spec_item_id)          AS spec_item_key,
+        sc.condition_key,
+        tp.timepoint_key,
+        HASH(v.instrument_id_vendor)         AS instrument_key,
+        u.uom_key,
+        CAST(DATE_FORMAT(v.test_date, 'yyyyMMdd') AS INT) AS test_date_key,
+
+        v.result_value,
+        v.result_text,
+        v.result_status_code,
+
+        v.reported_lower_limit,
+        v.reported_upper_limit,
+        v.reported_target,
+
+        -- Derive OOS flag: result outside reported limits
+        CASE
+            WHEN v.result_value IS NOT NULL AND v.reported_lower_limit IS NOT NULL
+                AND v.result_value < v.reported_lower_limit THEN TRUE
+            WHEN v.result_value IS NOT NULL AND v.reported_upper_limit IS NOT NULL
+                AND v.result_value > v.reported_upper_limit THEN TRUE
+            WHEN UPPER(v.result_status_code) = 'OOS' THEN TRUE
+            ELSE FALSE
+        END                                  AS is_oos,
+        CASE WHEN UPPER(v.result_status_code) = 'OOT' THEN TRUE ELSE FALSE END AS is_oot,
+
+        v.analyst_name,
+        v.reviewer_name,
+        v.lab_name,
+        v.report_id,
+        v.coa_number,
+        v.stability_study_id,
+
+        v.source_result_id,
+        TRUE                                 AS is_current,
+        CURRENT_TIMESTAMP()                  AS load_timestamp
+
+    FROM l2_1_lims.src_vendor_analytical_results v
+    LEFT JOIN dim_stability_condition sc ON sc.condition_code = v.storage_condition_code
+    LEFT JOIN dim_timepoint tp ON tp.timepoint_code = v.time_point_code
+    LEFT JOIN dim_uom u ON u.uom_code = v.uom_code
+    WHERE v.is_current = TRUE
+) AS src
+ON tgt.analytical_result_key = src.analytical_result_key
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L2.2 Dims & Facts
 
 -- COMMAND ----------
@@ -422,4 +546,7 @@ UNION ALL SELECT 'dim_site', COUNT(*) FROM dim_site
 UNION ALL SELECT 'dim_market', COUNT(*) FROM dim_market
 UNION ALL SELECT 'dim_specification', COUNT(*) FROM dim_specification
 UNION ALL SELECT 'dim_specification_item', COUNT(*) FROM dim_specification_item
-UNION ALL SELECT 'fact_specification_limit', COUNT(*) FROM fact_specification_limit;
+UNION ALL SELECT 'dim_batch', COUNT(*) FROM dim_batch
+UNION ALL SELECT 'dim_instrument', COUNT(*) FROM dim_instrument
+UNION ALL SELECT 'fact_specification_limit', COUNT(*) FROM fact_specification_limit
+UNION ALL SELECT 'fact_analytical_result', COUNT(*) FROM fact_analytical_result;

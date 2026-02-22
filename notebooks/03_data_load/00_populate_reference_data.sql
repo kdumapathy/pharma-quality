@@ -110,6 +110,51 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## dim_stability_condition — ICH Storage Conditions
+
+-- COMMAND ----------
+
+MERGE INTO dim_stability_condition AS tgt
+USING (
+    VALUES
+        (1, '25C60RH',  '25°C / 60% RH',  CAST(25.0 AS DECIMAL(5,1)), CAST(60.0 AS DECIMAL(5,1)), 'LONG_TERM',     TRUE),
+        (2, '30C65RH',  '30°C / 65% RH',  CAST(30.0 AS DECIMAL(5,1)), CAST(65.0 AS DECIMAL(5,1)), 'INTERMEDIATE',  TRUE),
+        (3, '40C75RH',  '40°C / 75% RH',  CAST(40.0 AS DECIMAL(5,1)), CAST(75.0 AS DECIMAL(5,1)), 'ACCELERATED',   TRUE),
+        (4, '5C',       '5°C ± 3°C',      CAST(5.0 AS DECIMAL(5,1)),  CAST(NULL AS DECIMAL(5,1)), 'REFRIGERATED',  TRUE),
+        (5, 'REFRIG',   '2-8°C',          CAST(5.0 AS DECIMAL(5,1)),  CAST(NULL AS DECIMAL(5,1)), 'REFRIGERATED',  TRUE),
+        (6, 'FREEZER',  '-20°C ± 5°C',    CAST(-20.0 AS DECIMAL(5,1)),CAST(NULL AS DECIMAL(5,1)), 'FROZEN',        TRUE)
+    ) AS src(condition_key, condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, is_active)
+ON tgt.condition_key = src.condition_key
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## dim_timepoint — Stability Time Points
+
+-- COMMAND ----------
+
+MERGE INTO dim_timepoint AS tgt
+USING (
+    VALUES
+        (1,  'T0',   0,  'Initial',    1,  TRUE),
+        (2,  'T1M',  1,  '1 Month',    2,  TRUE),
+        (3,  'T3M',  3,  '3 Months',   3,  TRUE),
+        (4,  'T6M',  6,  '6 Months',   4,  TRUE),
+        (5,  'T9M',  9,  '9 Months',   5,  TRUE),
+        (6,  'T12M', 12, '12 Months',  6,  TRUE),
+        (7,  'T18M', 18, '18 Months',  7,  TRUE),
+        (8,  'T24M', 24, '24 Months',  8,  TRUE),
+        (9,  'T36M', 36, '36 Months',  9,  TRUE)
+    ) AS src(timepoint_key, timepoint_code, timepoint_months, timepoint_name, display_order, is_active)
+ON tgt.timepoint_key = src.timepoint_key
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ## dim_date — Calendar Date Dimension
 -- MAGIC Populates dates from 2020-01-01 to 2035-12-31.
 
@@ -150,5 +195,9 @@ UNION ALL
 SELECT 'dim_limit_type', COUNT(*) FROM dim_limit_type
 UNION ALL
 SELECT 'dim_regulatory_context', COUNT(*) FROM dim_regulatory_context
+UNION ALL
+SELECT 'dim_stability_condition', COUNT(*) FROM dim_stability_condition
+UNION ALL
+SELECT 'dim_timepoint', COUNT(*) FROM dim_timepoint
 UNION ALL
 SELECT 'dim_date', COUNT(*) FROM dim_date;
