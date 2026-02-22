@@ -230,10 +230,135 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ## obt_stability_results
+-- MAGIC Fully denormalized stability analytical results for trend analysis and reporting.
+
+-- COMMAND ----------
+
+MERGE INTO l3_spec_products.obt_stability_results AS tgt
+USING (
+    SELECT
+        HASH(f.analytical_result_key)       AS obt_stab_key,
+
+        -- Batch
+        b.batch_number,
+        b.manufacturing_date,
+        b.expiry_date,
+        b.batch_size,
+        b.batch_size_unit,
+
+        -- Product & Material
+        p.product_name,
+        p.product_family,
+        s.dosage_form,
+        s.strength,
+        m.material_name,
+        m.material_type,
+
+        -- Site
+        st.site_name,
+        st.country_code,
+        f.lab_name,
+
+        -- Specification
+        s.spec_number,
+        s.spec_version,
+        s.spec_type_code,
+
+        -- Test / Item
+        i.test_name,
+        i.test_code,
+        i.test_category_code,
+        i.test_category_name,
+        i.criticality_code,
+        tm.method_name,
+        tm.technique,
+
+        -- Stability Context
+        f.stability_study_id,
+        sc.condition_code                   AS storage_condition_code,
+        sc.condition_name                   AS storage_condition_name,
+        sc.ich_condition_type,
+        tp.timepoint_code                   AS time_point_code,
+        tp.timepoint_months                 AS time_point_months,
+        tp.timepoint_name                   AS time_point_name,
+
+        -- Result
+        f.result_value,
+        f.result_text,
+        u.uom_code,
+        u.uom_name,
+        f.result_status_code,
+
+        -- Reported limits
+        f.reported_lower_limit,
+        f.reported_upper_limit,
+        f.reported_target,
+
+        -- Specification AC limits (from fact_specification_limit for the same spec item, stage=RELEASE)
+        ac_lim.lower_limit_value            AS spec_ac_lower_limit,
+        ac_lim.upper_limit_value            AS spec_ac_upper_limit,
+
+        -- Derived flags
+        f.is_oos,
+        f.is_oot,
+
+        -- Instrument
+        inst.instrument_name,
+
+        -- Personnel
+        f.analyst_name,
+        f.reviewer_name,
+
+        -- Report
+        f.report_id,
+        f.coa_number,
+
+        -- Dates
+        dt.full_date                        AS test_date,
+        CAST(NULL AS DATE)                  AS pull_date,
+
+        -- Metadata
+        f.is_current,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
+
+    FROM l2_2_spec_unified.fact_analytical_result f
+    JOIN l2_2_spec_unified.dim_batch b                  ON f.batch_key = b.batch_key
+    LEFT JOIN l2_2_spec_unified.dim_specification s     ON f.spec_key = s.spec_key
+    LEFT JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+    LEFT JOIN l2_2_spec_unified.dim_product p           ON s.product_key = p.product_key
+    LEFT JOIN l2_2_spec_unified.dim_material m          ON s.material_key = m.material_key
+    LEFT JOIN l2_2_spec_unified.dim_site st             ON s.site_key = st.site_key
+    LEFT JOIN l2_2_spec_unified.dim_test_method tm      ON i.test_method_key = tm.test_method_key
+    LEFT JOIN l2_2_spec_unified.dim_stability_condition sc ON f.condition_key = sc.condition_key
+    LEFT JOIN l2_2_spec_unified.dim_timepoint tp        ON f.timepoint_key = tp.timepoint_key
+    LEFT JOIN l2_2_spec_unified.dim_uom u               ON f.uom_key = u.uom_key
+    LEFT JOIN l2_2_spec_unified.dim_instrument inst     ON f.instrument_key = inst.instrument_key
+    LEFT JOIN l2_2_spec_unified.dim_date dt             ON f.test_date_key = dt.date_key
+    -- Join to get specification AC limits for the same spec item
+    LEFT JOIN (
+        SELECT spec_item_key, lower_limit_value, upper_limit_value
+        FROM l2_2_spec_unified.fact_specification_limit fsl
+        JOIN l2_2_spec_unified.dim_limit_type lt ON fsl.limit_type_key = lt.limit_type_key
+        WHERE lt.limit_type_code = 'AC'
+          AND fsl.is_current = TRUE
+          AND COALESCE(fsl.stage_code, 'RELEASE') = 'RELEASE'
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY fsl.spec_item_key ORDER BY fsl.load_timestamp DESC) = 1
+    ) ac_lim ON f.spec_item_key = ac_lim.spec_item_key
+) AS src
+ON tgt.obt_stab_key = src.obt_stab_key
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L3 Tables
 
 -- COMMAND ----------
 
 SELECT 'obt_specification_ctd' AS table_name, COUNT(*) AS rows FROM l3_spec_products.obt_specification_ctd
 UNION ALL
-SELECT 'obt_acceptance_criteria', COUNT(*) FROM l3_spec_products.obt_acceptance_criteria;
+SELECT 'obt_acceptance_criteria', COUNT(*) FROM l3_spec_products.obt_acceptance_criteria
+UNION ALL
+SELECT 'obt_stability_results', COUNT(*) FROM l3_spec_products.obt_stability_results;

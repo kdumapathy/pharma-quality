@@ -1,17 +1,21 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # L2.2 Unified Data Model — Specifications Domain
--- MAGIC Creates the star schema and denormalized tables for the pharma quality specifications domain.
+-- MAGIC # L2.2 Unified Data Model — Specifications & Analytical Results
+-- MAGIC Creates the star schema and denormalized tables for the pharma quality domain.
 -- MAGIC
--- MAGIC **Reference Dimensions:** `dim_date`, `dim_uom`, `dim_limit_type`, `dim_regulatory_context`
+-- MAGIC **Reference Dimensions:** `dim_date`, `dim_uom`, `dim_limit_type`, `dim_regulatory_context`, `dim_stability_condition`, `dim_timepoint`
 -- MAGIC **MDM Dimensions:** `dim_product`, `dim_material`, `dim_test_method`, `dim_site`, `dim_market`
 -- MAGIC **Conformed Dimensions:** `dim_specification`, `dim_specification_item`
--- MAGIC **Fact Table:** `fact_specification_limit`
+-- MAGIC **Analytical Dimensions:** `dim_batch`, `dim_instrument`
+-- MAGIC **Fact Tables:** `fact_specification_limit`, `fact_analytical_result`
 -- MAGIC **Denormalized:** `dspec_specification`
 
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l2_2_spec_unified;
 
 -- COMMAND ----------
@@ -554,6 +558,187 @@ TBLPROPERTIES (
     'quality.domain'                    = 'specifications',
     'quality.layer'                     = 'L2.2',
     'quality.table_type'                = 'denormalized'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## Analytical Results Dimensions
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### dim_batch
+-- MAGIC Manufacturing batch / lot dimension for analytical results.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_batch
+(
+    batch_key                   BIGINT          NOT NULL    COMMENT 'Surrogate key',
+    batch_number                STRING          NOT NULL    COMMENT 'Manufacturing batch / lot number',
+    batch_system_id             STRING                      COMMENT 'Batch system ID',
+    product_key                 BIGINT                      COMMENT 'FK → dim_product',
+    site_key                    BIGINT                      COMMENT 'FK → dim_site',
+    manufacturing_date          DATE                        COMMENT 'Manufacturing date',
+    expiry_date                 DATE                        COMMENT 'Expiry date',
+    batch_size                  DECIMAL(18, 4)              COMMENT 'Batch size',
+    batch_size_unit             STRING                      COMMENT 'Batch size unit (kg, L, units)',
+    batch_status                STRING                      COMMENT 'Status: RELEASED|QUARANTINE|REJECTED|RECALLED',
+    is_active                   BOOLEAN         NOT NULL    COMMENT 'Active flag',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'Load timestamp'
+)
+USING DELTA
+COMMENT 'L2.2 Dimension: Manufacturing batch / lot for analytical results.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.2',
+    'quality.table_type'                = 'dimension'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### dim_stability_condition
+-- MAGIC ICH stability storage condition dimension.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_stability_condition
+(
+    condition_key               INT             NOT NULL    COMMENT 'Surrogate key',
+    condition_code              STRING          NOT NULL    COMMENT 'Code: 25C60RH|30C65RH|40C75RH|5C|REFRIG|FREEZER',
+    condition_name              STRING          NOT NULL    COMMENT 'Display name (e.g., 25°C / 60% RH)',
+    temperature_celsius         DECIMAL(5, 1)               COMMENT 'Temperature in Celsius',
+    humidity_pct                DECIMAL(5, 1)               COMMENT 'Relative humidity percentage',
+    ich_condition_type          STRING          NOT NULL    COMMENT 'ICH type: LONG_TERM|ACCELERATED|INTERMEDIATE|REFRIGERATED|FROZEN',
+    is_active                   BOOLEAN         NOT NULL    COMMENT 'Active flag'
+)
+USING DELTA
+COMMENT 'L2.2 Reference: ICH stability storage condition dimension.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.2',
+    'quality.table_type'                = 'reference_dimension'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### dim_timepoint
+-- MAGIC Stability study time point dimension.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_timepoint
+(
+    timepoint_key               INT             NOT NULL    COMMENT 'Surrogate key',
+    timepoint_code              STRING          NOT NULL    COMMENT 'Code: T0|T1M|T3M|T6M|T9M|T12M|T18M|T24M|T36M',
+    timepoint_months            INT             NOT NULL    COMMENT 'Time point in months (0, 1, 3, 6, ...)',
+    timepoint_name              STRING          NOT NULL    COMMENT 'Display name (e.g., Initial, 3 Months, 6 Months)',
+    display_order               INT             NOT NULL    COMMENT 'Sort order for display',
+    is_active                   BOOLEAN         NOT NULL    COMMENT 'Active flag'
+)
+USING DELTA
+COMMENT 'L2.2 Reference: Stability study time point dimension.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.2',
+    'quality.table_type'                = 'reference_dimension'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### dim_instrument
+-- MAGIC Analytical instrument / equipment dimension.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_instrument
+(
+    instrument_key              BIGINT          NOT NULL    COMMENT 'Surrogate key',
+    instrument_id               STRING          NOT NULL    COMMENT 'Instrument ID',
+    instrument_name             STRING          NOT NULL    COMMENT 'Instrument name or model',
+    instrument_type             STRING                      COMMENT 'Type: HPLC|GC|IR|UV_VIS|DISSOLUTION|BALANCE|PH_METER|OTHER',
+    is_active                   BOOLEAN         NOT NULL    COMMENT 'Active flag',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'Load timestamp'
+)
+USING DELTA
+COMMENT 'L2.2 Dimension: Analytical instrument / equipment.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.2',
+    'quality.table_type'                = 'dimension'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ## Analytical Results Fact
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### fact_analytical_result
+-- MAGIC Grain: one row per batch × test × stability condition × time point.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_2_spec_unified.fact_analytical_result
+(
+    analytical_result_key       BIGINT          NOT NULL    COMMENT 'Surrogate key',
+    batch_key                   BIGINT          NOT NULL    COMMENT 'FK → dim_batch',
+    spec_key                    BIGINT                      COMMENT 'FK → dim_specification',
+    spec_item_key               BIGINT                      COMMENT 'FK → dim_specification_item',
+    condition_key               INT                         COMMENT 'FK → dim_stability_condition',
+    timepoint_key               INT                         COMMENT 'FK → dim_timepoint',
+    instrument_key              BIGINT                      COMMENT 'FK → dim_instrument',
+    uom_key                     INT                         COMMENT 'FK → dim_uom',
+    test_date_key               INT                         COMMENT 'FK → dim_date (test date)',
+
+    -- Measures
+    result_value                DECIMAL(18, 6)              COMMENT 'Numeric test result',
+    result_text                 STRING                      COMMENT 'Text result (non-numeric tests)',
+    result_status_code          STRING          NOT NULL    COMMENT 'Status: PASS|FAIL|OOS|OOT|PENDING|REPORT',
+
+    -- Reported limits (vendor-provided for comparison)
+    reported_lower_limit        DECIMAL(18, 6)              COMMENT 'Vendor-reported lower limit',
+    reported_upper_limit        DECIMAL(18, 6)              COMMENT 'Vendor-reported upper limit',
+    reported_target             DECIMAL(18, 6)              COMMENT 'Vendor-reported target',
+
+    -- Derived flags
+    is_oos                      BOOLEAN                     COMMENT 'TRUE if result is Out of Specification',
+    is_oot                      BOOLEAN                     COMMENT 'TRUE if result is Out of Trend',
+
+    -- Context
+    analyst_name                STRING                      COMMENT 'Analyst who performed the test',
+    reviewer_name               STRING                      COMMENT 'Reviewer who approved the result',
+    lab_name                    STRING                      COMMENT 'Laboratory name',
+    report_id                   STRING                      COMMENT 'Analytical report / CoA ID',
+    coa_number                  STRING                      COMMENT 'Certificate of Analysis number',
+    stability_study_id          STRING                      COMMENT 'Stability study identifier',
+
+    -- Lineage
+    source_result_id            STRING                      COMMENT 'Source system natural key',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Current version flag',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'Load timestamp'
+)
+USING DELTA
+PARTITIONED BY (result_status_code)
+COMMENT 'L2.2 Fact: Analytical test results at grain of batch × test × condition × time point.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'delta.enableChangeDataFeed'        = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L2.2',
+    'quality.table_type'                = 'fact'
 );
 
 -- COMMAND ----------

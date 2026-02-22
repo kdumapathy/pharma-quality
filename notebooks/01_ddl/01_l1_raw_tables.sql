@@ -1,17 +1,23 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # L1 Raw Tables — LIMS Ingestion Zone
--- MAGIC Creates the immutable raw landing tables for LIMS source data.
+-- MAGIC # L1 Raw Tables — Ingestion Zone
+-- MAGIC Creates the immutable raw landing tables for all source systems.
 -- MAGIC All fields stored as STRING to avoid type-cast failures.
 -- MAGIC
 -- MAGIC **Tables:**
--- MAGIC - `raw_lims_specification` — Specification headers
--- MAGIC - `raw_lims_spec_item` — Specification items / tests
--- MAGIC - `raw_lims_spec_limit` — Specification limits
+-- MAGIC - `raw_lims_specification` — Specification headers (LIMS)
+-- MAGIC - `raw_lims_spec_item` — Specification items / tests (LIMS)
+-- MAGIC - `raw_lims_spec_limit` — Specification limits (LIMS)
+-- MAGIC - `raw_process_recipe` — Process recipe limits (Recipe system)
+-- MAGIC - `raw_pdf_specification` — Transcribed PDF/SOP specifications
+-- MAGIC - `raw_vendor_analytical_results` — Vendor/Excel stability analytical results
 
 -- COMMAND ----------
 
 USE CATALOG pharma_quality;
+
+-- COMMAND ----------
+
 USE SCHEMA l1_raw;
 
 -- COMMAND ----------
@@ -169,6 +175,276 @@ TBLPROPERTIES (
     'quality.layer'                     = 'L1',
     'quality.source'                    = 'LIMS',
     'quality.table_type'                = 'raw_ingest'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### raw_process_recipe
+-- MAGIC Process recipe / manufacturing parameter limits from the Recipe Management system.
+-- MAGIC Contains NOR, PAR, Target, Alert, and Action limits derived from process capability and validation data.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l1_raw.raw_process_recipe
+(
+    -- Ingestion Metadata
+    _ingestion_id               STRING          NOT NULL    COMMENT 'UUID assigned by ingestion pipeline',
+    _source_system              STRING          NOT NULL    COMMENT 'Source system tag (RECIPE)',
+    _source_file                STRING                      COMMENT 'Source file or API endpoint',
+    _batch_id                   STRING          NOT NULL    COMMENT 'ETL batch identifier',
+    _ingestion_timestamp        TIMESTAMP       NOT NULL    COMMENT 'UTC ingestion timestamp',
+    _record_hash                STRING                      COMMENT 'SHA-256 hash of source payload',
+
+    -- Recipe Header
+    recipe_id                   STRING                      COMMENT 'Recipe record ID (PK in source)',
+    recipe_name                 STRING                      COMMENT 'Recipe name',
+    recipe_version              STRING                      COMMENT 'Recipe version',
+    recipe_type                 STRING                      COMMENT 'Type: MANUFACTURING|PACKAGING|CLEANING',
+
+    -- Product / Material linkage
+    product_id                  STRING                      COMMENT 'Product ID in recipe system',
+    product_name                STRING                      COMMENT 'Product name',
+    material_id                 STRING                      COMMENT 'Material ID in recipe system',
+    material_name               STRING                      COMMENT 'Material name',
+    site_id                     STRING                      COMMENT 'Site ID',
+    site_name                   STRING                      COMMENT 'Site name',
+
+    -- Specification linkage (maps to LIMS spec/item for unified model)
+    specification_id            STRING                      COMMENT 'Linked LIMS specification ID',
+    spec_item_id                STRING                      COMMENT 'Linked LIMS spec item ID',
+    parameter_code              STRING                      COMMENT 'Recipe parameter code',
+    parameter_name              STRING                      COMMENT 'Recipe parameter / test name',
+
+    -- Limit values
+    limit_type                  STRING                      COMMENT 'Limit type: NOR|PAR|TARGET|ALERT|ACTION|IPC_LIMIT',
+    lower_limit                 STRING                      COMMENT 'Lower limit value (numeric as string)',
+    upper_limit                 STRING                      COMMENT 'Upper limit value (numeric as string)',
+    target_value                STRING                      COMMENT 'Target / nominal value',
+    uom                         STRING                      COMMENT 'Unit of measure string',
+    limit_basis                 STRING                      COMMENT 'Basis (as-is / anhydrous / dried-basis)',
+
+    -- Context
+    stage                       STRING                      COMMENT 'Stage: Development / Clinical / Commercial',
+
+    -- SPC / Process Capability
+    calculation_method          STRING                      COMMENT 'SPC method: 3_SIGMA|CPK|EWMA|CUSUM|MANUAL',
+    sample_size                 STRING                      COMMENT 'Sample size used for SPC calculation',
+    cpk_value                   STRING                      COMMENT 'Process capability index (Cpk)',
+    last_calculated_date        STRING                      COMMENT 'Date of last SPC recalculation',
+
+    -- Metadata
+    effective_start_date        STRING                      COMMENT 'Effective start date (YYYY-MM-DD)',
+    effective_end_date          STRING                      COMMENT 'Effective end date (or NULL)',
+    approval_status             STRING                      COMMENT 'Approval status in recipe system',
+    approved_by                 STRING                      COMMENT 'Approver',
+    created_date                STRING                      COMMENT 'Record creation date',
+    modified_date               STRING                      COMMENT 'Last modified date'
+)
+USING DELTA
+PARTITIONED BY (_source_system)
+COMMENT 'L1 Raw: Process recipe limits (NOR/PAR/Target). Immutable append-only. All STRING.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L1',
+    'quality.source'                    = 'RECIPE',
+    'quality.table_type'                = 'raw_ingest',
+    'quality.transformation'            = 'none'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### raw_pdf_specification
+-- MAGIC Transcribed specification data from SOP / PDF documents.
+-- MAGIC Each row represents one test-limit combination extracted from a document page.
+-- MAGIC Flat/denormalized structure since the source is a transcribed CSV, not a relational system.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l1_raw.raw_pdf_specification
+(
+    -- Ingestion Metadata
+    _ingestion_id               STRING          NOT NULL    COMMENT 'UUID assigned by ingestion pipeline',
+    _source_system              STRING          NOT NULL    COMMENT 'Source system tag (PDF)',
+    _source_file                STRING                      COMMENT 'Original PDF file path or name',
+    _batch_id                   STRING          NOT NULL    COMMENT 'ETL batch identifier',
+    _ingestion_timestamp        TIMESTAMP       NOT NULL    COMMENT 'UTC ingestion timestamp',
+    _record_hash                STRING                      COMMENT 'SHA-256 hash of row content',
+
+    -- Document Provenance
+    document_id                 STRING                      COMMENT 'Unique document identifier',
+    document_name               STRING                      COMMENT 'PDF / SOP document title',
+    document_version            STRING                      COMMENT 'Document revision or version',
+    document_type               STRING                      COMMENT 'Type: SOP|SPEC_SHEET|REGULATORY|CERTIFICATE',
+    sop_number                  STRING                      COMMENT 'SOP document number (e.g., SOP-QC-001)',
+    page_number                 STRING                      COMMENT 'Page number in source PDF',
+    section_reference           STRING                      COMMENT 'Section heading or reference in the document',
+    transcription_date          STRING                      COMMENT 'Date the PDF was transcribed to CSV',
+    transcribed_by              STRING                      COMMENT 'User or system that performed transcription',
+
+    -- Specification Header
+    spec_number                 STRING                      COMMENT 'Specification number extracted from document',
+    spec_version                STRING                      COMMENT 'Specification version',
+    spec_title                  STRING                      COMMENT 'Specification title from document',
+    spec_type                   STRING                      COMMENT 'Type: Drug Product / Drug Substance / etc.',
+
+    -- Product / Material
+    product_id                  STRING                      COMMENT 'Product ID referenced in document',
+    product_name                STRING                      COMMENT 'Product name from document',
+    material_id                 STRING                      COMMENT 'Material ID referenced in document',
+    material_name               STRING                      COMMENT 'Material / substance name',
+    site_name                   STRING                      COMMENT 'Manufacturing / testing site from document',
+    market_region               STRING                      COMMENT 'Target market or region',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code from document',
+    test_name                   STRING                      COMMENT 'Test / parameter name',
+    test_category               STRING                      COMMENT 'Test category (Physical / Chemical / etc.)',
+    test_method_reference       STRING                      COMMENT 'Method reference (e.g., USP <621>)',
+    uom                         STRING                      COMMENT 'Unit of measure from document',
+    criticality                 STRING                      COMMENT 'CQA / CCQA / NCQA from document',
+
+    -- Limit Values (one row per test-limit combination)
+    limit_type                  STRING                      COMMENT 'Limit type: AC|NOR|PAR|ALERT|ACTION|REPORT',
+    lower_limit                 STRING                      COMMENT 'Lower limit value (as printed in document)',
+    upper_limit                 STRING                      COMMENT 'Upper limit value',
+    target_value                STRING                      COMMENT 'Target / nominal value',
+    limit_text                  STRING                      COMMENT 'Qualitative limit text (e.g., White powder)',
+    limit_expression            STRING                      COMMENT 'Full limit as written in document (e.g., NMT 0.15%)',
+
+    -- Regulatory Context
+    ctd_section                 STRING                      COMMENT 'CTD section reference from document',
+    compendia_reference         STRING                      COMMENT 'Compendia reference (USP / EP / JP)',
+    regulatory_basis            STRING                      COMMENT 'Regulatory basis (ICH Q6A / Q3B)',
+    stage                       STRING                      COMMENT 'Stage: Release / Stability',
+    stability_condition         STRING                      COMMENT 'Stability storage condition',
+
+    -- Status / Dates
+    effective_date              STRING                      COMMENT 'Effective date from document',
+    approval_date               STRING                      COMMENT 'Approval date from document',
+    approved_by                 STRING                      COMMENT 'Approver name from signature block'
+)
+USING DELTA
+PARTITIONED BY (_source_system)
+COMMENT 'L1 Raw: Transcribed PDF/SOP specification data. Flat CSV ingest. All STRING.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L1',
+    'quality.source'                    = 'PDF',
+    'quality.table_type'                = 'raw_ingest',
+    'quality.transformation'            = 'none'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC ### raw_vendor_analytical_results
+-- MAGIC Analytical test results from vendor/Excel stability studies.
+-- MAGIC Each row represents one test result for a specific batch × test × stability condition × time point.
+-- MAGIC Source is typically an Excel workbook exported from a CRO or vendor LIMS.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l1_raw.raw_vendor_analytical_results
+(
+    -- Ingestion Metadata
+    _ingestion_id               STRING          NOT NULL    COMMENT 'UUID assigned by ingestion pipeline',
+    _source_system              STRING          NOT NULL    COMMENT 'Source system tag (VENDOR_EXCEL)',
+    _source_file                STRING                      COMMENT 'Source Excel file path or name',
+    _batch_id                   STRING          NOT NULL    COMMENT 'ETL batch identifier',
+    _ingestion_timestamp        TIMESTAMP       NOT NULL    COMMENT 'UTC ingestion timestamp',
+    _record_hash                STRING                      COMMENT 'SHA-256 hash of row content',
+
+    -- Result Identification
+    result_id                   STRING                      COMMENT 'Unique result record ID from vendor',
+    sample_id                   STRING                      COMMENT 'Sample identifier',
+
+    -- Batch
+    batch_number                STRING                      COMMENT 'Manufacturing batch / lot number',
+    batch_id                    STRING                      COMMENT 'Batch system ID',
+    manufacturing_date          STRING                      COMMENT 'Batch manufacturing date (YYYY-MM-DD)',
+    expiry_date                 STRING                      COMMENT 'Batch expiry date (YYYY-MM-DD)',
+    batch_size                  STRING                      COMMENT 'Batch size value',
+    batch_size_unit             STRING                      COMMENT 'Batch size unit (kg, L, units)',
+
+    -- Product / Material
+    product_id                  STRING                      COMMENT 'Product ID from vendor',
+    product_name                STRING                      COMMENT 'Product name',
+    material_id                 STRING                      COMMENT 'Material / substance ID',
+    material_name               STRING                      COMMENT 'Material name',
+    dosage_form                 STRING                      COMMENT 'Dosage form (Tablet, Capsule)',
+    strength                    STRING                      COMMENT 'Product strength (e.g., 500 mg)',
+
+    -- Specification linkage
+    specification_id            STRING                      COMMENT 'Linked specification ID',
+    spec_item_id                STRING                      COMMENT 'Linked specification item ID',
+
+    -- Test / Parameter
+    test_code                   STRING                      COMMENT 'Test code',
+    test_name                   STRING                      COMMENT 'Test / parameter name',
+    test_category               STRING                      COMMENT 'Test category (Physical / Chemical / etc.)',
+    test_method_id              STRING                      COMMENT 'Test method ID',
+    test_method_name            STRING                      COMMENT 'Test method name or reference',
+
+    -- Stability Context
+    stability_study_id          STRING                      COMMENT 'Stability study identifier',
+    storage_condition           STRING                      COMMENT 'ICH storage condition (e.g., 25C/60%RH, 40C/75%RH)',
+    time_point_code             STRING                      COMMENT 'Time point code (T0, T3M, T6M, T12M, T24M, T36M)',
+    time_point_months           STRING                      COMMENT 'Time point in months (numeric as string)',
+    pull_date                   STRING                      COMMENT 'Sample pull / test date (YYYY-MM-DD)',
+
+    -- Result Values
+    result_value                STRING                      COMMENT 'Numeric result value (as string)',
+    result_text                 STRING                      COMMENT 'Text result (for non-numeric tests)',
+    result_unit                 STRING                      COMMENT 'Unit of measure for result',
+    result_status               STRING                      COMMENT 'Result status: PASS|FAIL|OOS|OOT|PENDING|REPORT',
+
+    -- Limits (as reported by vendor)
+    reported_lower_limit        STRING                      COMMENT 'Lower limit as reported by vendor',
+    reported_upper_limit        STRING                      COMMENT 'Upper limit as reported by vendor',
+    reported_target             STRING                      COMMENT 'Target value as reported by vendor',
+
+    -- Instrument
+    instrument_id               STRING                      COMMENT 'Instrument / equipment ID',
+    instrument_name             STRING                      COMMENT 'Instrument name or type',
+
+    -- Personnel
+    analyst_name                STRING                      COMMENT 'Analyst who performed the test',
+    reviewer_name               STRING                      COMMENT 'Reviewer who approved the result',
+
+    -- Site / Lab
+    site_id                     STRING                      COMMENT 'Testing site ID',
+    site_name                   STRING                      COMMENT 'Testing site name',
+    lab_id                      STRING                      COMMENT 'Laboratory ID',
+    lab_name                    STRING                      COMMENT 'Laboratory name',
+
+    -- Document / Report
+    report_id                   STRING                      COMMENT 'Analytical report or CoA ID',
+    report_name                 STRING                      COMMENT 'Report name',
+    coa_number                  STRING                      COMMENT 'Certificate of Analysis number',
+
+    -- Dates
+    test_date                   STRING                      COMMENT 'Date test was performed (YYYY-MM-DD)',
+    review_date                 STRING                      COMMENT 'Date result was reviewed (YYYY-MM-DD)',
+    approval_date               STRING                      COMMENT 'Date result was approved (YYYY-MM-DD)',
+
+    -- Metadata
+    created_date                STRING                      COMMENT 'Record creation date in source',
+    modified_date               STRING                      COMMENT 'Record last-modified date in source'
+)
+USING DELTA
+PARTITIONED BY (_source_system)
+COMMENT 'L1 Raw: Vendor/Excel analytical test results for stability studies. Immutable append-only. All STRING.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'analytical_results',
+    'quality.layer'                     = 'L1',
+    'quality.source'                    = 'VENDOR_EXCEL',
+    'quality.table_type'                = 'raw_ingest',
+    'quality.transformation'            = 'none'
 );
 
 -- COMMAND ----------
