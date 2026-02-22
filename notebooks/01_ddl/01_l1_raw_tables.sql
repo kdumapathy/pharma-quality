@@ -177,6 +177,82 @@ TBLPROPERTIES (
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ### raw_process_recipe
+-- MAGIC Process recipe / manufacturing parameter limits from the Recipe Management system.
+-- MAGIC Contains NOR, PAR, Target, Alert, and Action limits derived from process capability and validation data.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l1_raw.raw_process_recipe
+(
+    -- Ingestion Metadata
+    _ingestion_id               STRING          NOT NULL    COMMENT 'UUID assigned by ingestion pipeline',
+    _source_system              STRING          NOT NULL    COMMENT 'Source system tag (RECIPE)',
+    _source_file                STRING                      COMMENT 'Source file or API endpoint',
+    _batch_id                   STRING          NOT NULL    COMMENT 'ETL batch identifier',
+    _ingestion_timestamp        TIMESTAMP       NOT NULL    COMMENT 'UTC ingestion timestamp',
+    _record_hash                STRING                      COMMENT 'SHA-256 hash of source payload',
+
+    -- Recipe Header
+    recipe_id                   STRING                      COMMENT 'Recipe record ID (PK in source)',
+    recipe_name                 STRING                      COMMENT 'Recipe name',
+    recipe_version              STRING                      COMMENT 'Recipe version',
+    recipe_type                 STRING                      COMMENT 'Type: MANUFACTURING|PACKAGING|CLEANING',
+
+    -- Product / Material linkage
+    product_id                  STRING                      COMMENT 'Product ID in recipe system',
+    product_name                STRING                      COMMENT 'Product name',
+    material_id                 STRING                      COMMENT 'Material ID in recipe system',
+    material_name               STRING                      COMMENT 'Material name',
+    site_id                     STRING                      COMMENT 'Site ID',
+    site_name                   STRING                      COMMENT 'Site name',
+
+    -- Specification linkage (maps to LIMS spec/item for unified model)
+    specification_id            STRING                      COMMENT 'Linked LIMS specification ID',
+    spec_item_id                STRING                      COMMENT 'Linked LIMS spec item ID',
+    parameter_code              STRING                      COMMENT 'Recipe parameter code',
+    parameter_name              STRING                      COMMENT 'Recipe parameter / test name',
+
+    -- Limit values
+    limit_type                  STRING                      COMMENT 'Limit type: NOR|PAR|TARGET|ALERT|ACTION|IPC_LIMIT',
+    lower_limit                 STRING                      COMMENT 'Lower limit value (numeric as string)',
+    upper_limit                 STRING                      COMMENT 'Upper limit value (numeric as string)',
+    target_value                STRING                      COMMENT 'Target / nominal value',
+    uom                         STRING                      COMMENT 'Unit of measure string',
+    limit_basis                 STRING                      COMMENT 'Basis (as-is / anhydrous / dried-basis)',
+
+    -- Context
+    stage                       STRING                      COMMENT 'Stage: Development / Clinical / Commercial',
+
+    -- SPC / Process Capability
+    calculation_method          STRING                      COMMENT 'SPC method: 3_SIGMA|CPK|EWMA|CUSUM|MANUAL',
+    sample_size                 STRING                      COMMENT 'Sample size used for SPC calculation',
+    cpk_value                   STRING                      COMMENT 'Process capability index (Cpk)',
+    last_calculated_date        STRING                      COMMENT 'Date of last SPC recalculation',
+
+    -- Metadata
+    effective_start_date        STRING                      COMMENT 'Effective start date (YYYY-MM-DD)',
+    effective_end_date          STRING                      COMMENT 'Effective end date (or NULL)',
+    approval_status             STRING                      COMMENT 'Approval status in recipe system',
+    approved_by                 STRING                      COMMENT 'Approver',
+    created_date                STRING                      COMMENT 'Record creation date',
+    modified_date               STRING                      COMMENT 'Last modified date'
+)
+USING DELTA
+PARTITIONED BY (_source_system)
+COMMENT 'L1 Raw: Process recipe limits (NOR/PAR/Target). Immutable append-only. All STRING.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L1',
+    'quality.source'                    = 'RECIPE',
+    'quality.table_type'                = 'raw_ingest',
+    'quality.transformation'            = 'none'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L1 Tables
 
 -- COMMAND ----------

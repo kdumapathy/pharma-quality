@@ -183,6 +183,71 @@ TBLPROPERTIES (
 -- COMMAND ----------
 
 -- MAGIC %md
+-- MAGIC ### src_process_recipe
+-- MAGIC Cleansed, typed process recipe limits with standardized codes.
+
+-- COMMAND ----------
+
+CREATE TABLE IF NOT EXISTS l2_1_lims.src_process_recipe
+(
+    source_recipe_id            STRING          NOT NULL    COMMENT 'Recipe system natural key',
+    source_specification_id     STRING                      COMMENT 'Linked LIMS specification ID',
+    source_spec_item_id         STRING                      COMMENT 'Linked LIMS spec item ID',
+    source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID',
+    source_ingestion_timestamp  TIMESTAMP       NOT NULL    COMMENT 'Ingestion timestamp',
+    record_hash                 STRING                      COMMENT 'SHA-256 for CDC',
+
+    recipe_name                 STRING          NOT NULL    COMMENT 'Recipe name (trimmed)',
+    recipe_version              STRING                      COMMENT 'Recipe version',
+    recipe_type                 STRING                      COMMENT 'Mapped: MANUFACTURING|PACKAGING|CLEANING',
+    parameter_code              STRING                      COMMENT 'Parameter code (cleansed)',
+    parameter_name              STRING          NOT NULL    COMMENT 'Parameter name (trimmed)',
+
+    product_id_recipe           STRING                      COMMENT 'Product ID from recipe system (pre-MDM)',
+    product_name                STRING                      COMMENT 'Product name (trimmed)',
+    material_id_recipe          STRING                      COMMENT 'Material ID from recipe system (pre-MDM)',
+    material_name               STRING                      COMMENT 'Material name (trimmed)',
+    site_id_recipe              STRING                      COMMENT 'Site ID from recipe system (pre-MDM)',
+    site_name                   STRING                      COMMENT 'Site name (trimmed)',
+
+    limit_type_code             STRING          NOT NULL    COMMENT 'Mapped: NOR|PAR|TARGET|ALERT|ACTION|IPC_LIMIT',
+    lower_limit_value           DECIMAL(18, 6)              COMMENT 'Lower limit (cast from string)',
+    upper_limit_value           DECIMAL(18, 6)              COMMENT 'Upper limit (cast from string)',
+    target_value                DECIMAL(18, 6)              COMMENT 'Target value (cast)',
+    uom_code                    STRING                      COMMENT 'Unit code (standardized against dim_uom)',
+    limit_basis                 STRING                      COMMENT 'Mapped: AS_IS|ANHYDROUS|AS_LABELED|DRIED_BASIS',
+    stage_code                  STRING                      COMMENT 'Mapped: DEV|CLI|COM',
+
+    calculation_method          STRING                      COMMENT 'SPC method: 3_SIGMA|CPK|EWMA|CUSUM|MANUAL',
+    sample_size                 INT                         COMMENT 'Sample size (cast)',
+    cpk_value                   DECIMAL(8, 4)               COMMENT 'Process capability index (cast)',
+    last_calculated_date        DATE                        COMMENT 'SPC recalculation date (cast)',
+
+    effective_start_date        DATE                        COMMENT 'Effective start date (cast)',
+    effective_end_date          DATE                        COMMENT 'Effective end date (cast)',
+
+    dq_limit_type_mapped        BOOLEAN                     COMMENT 'TRUE if limit_type_code mapped successfully',
+    dq_numeric_cast_error       BOOLEAN                     COMMENT 'TRUE if any numeric cast failed',
+    dq_date_parse_error         BOOLEAN                     COMMENT 'TRUE if any date parse failed',
+    dq_spec_link_valid          BOOLEAN                     COMMENT 'TRUE if specification_id exists in LIMS source',
+    load_timestamp              TIMESTAMP       NOT NULL    COMMENT 'L2.1 load timestamp',
+    is_current                  BOOLEAN         NOT NULL    COMMENT 'Latest version flag'
+)
+USING DELTA
+PARTITIONED BY (limit_type_code)
+COMMENT 'L2.1 Source conform: Process recipe limits. Typed, standardized.'
+TBLPROPERTIES (
+    'delta.autoOptimize.optimizeWrite'  = 'true',
+    'delta.autoOptimize.autoCompact'    = 'true',
+    'quality.domain'                    = 'specifications',
+    'quality.layer'                     = 'L2.1',
+    'quality.source'                    = 'RECIPE',
+    'quality.source_raw_table'          = 'l1_raw.raw_process_recipe'
+);
+
+-- COMMAND ----------
+
+-- MAGIC %md
 -- MAGIC ### Verify L2.1 Tables
 
 -- COMMAND ----------
