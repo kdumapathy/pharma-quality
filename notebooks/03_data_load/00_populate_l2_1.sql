@@ -300,6 +300,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
+-- DBTITLE 1,Cell 12
 MERGE INTO l2_1_lims.src_pdf_specification AS tgt
 USING (
     SELECT
@@ -308,7 +309,6 @@ USING (
         _batch_id                                       AS source_batch_id,
         _ingestion_timestamp                            AS source_ingestion_timestamp,
         _record_hash                                    AS record_hash,
-
         TRIM(document_name)                             AS document_name,
         TRIM(document_version)                          AS document_version,
         UPPER(TRIM(document_type))                      AS document_type,
@@ -317,7 +317,6 @@ USING (
         TRIM(section_reference)                         AS section_reference,
         TRY_CAST(transcription_date AS DATE)            AS transcription_date,
         TRIM(transcribed_by)                            AS transcribed_by,
-
         TRIM(spec_number)                               AS spec_number,
         COALESCE(TRIM(spec_version), '1.0')             AS spec_version,
         TRIM(spec_title)                                AS spec_title,
@@ -330,14 +329,12 @@ USING (
             WHEN 'IN-PROCESS'     THEN 'IPC'
             ELSE UPPER(TRIM(spec_type))
         END                                             AS spec_type_code,
-
         TRIM(product_id)                                AS product_id_pdf,
         TRIM(product_name)                              AS product_name,
         TRIM(material_id)                               AS material_id_pdf,
         TRIM(material_name)                             AS material_name,
         TRIM(site_name)                                 AS site_name,
         TRIM(market_region)                             AS market_region,
-
         UPPER(TRIM(test_code))                          AS test_code,
         TRIM(test_name)                                 AS test_name,
         CASE UPPER(TRIM(test_category))
@@ -353,14 +350,12 @@ USING (
         TRIM(test_method_reference)                     AS test_method_reference,
         TRIM(uom)                                       AS uom_code,
         UPPER(TRIM(criticality))                        AS criticality_code,
-
         UPPER(TRIM(limit_type))                         AS limit_type_code,
         TRY_CAST(lower_limit AS DECIMAL(18,6))          AS lower_limit_value,
         TRY_CAST(upper_limit AS DECIMAL(18,6))          AS upper_limit_value,
         TRY_CAST(target_value AS DECIMAL(18,6))         AS target_value,
         TRIM(limit_text)                                AS limit_text,
         TRIM(limit_expression)                          AS limit_expression,
-
         TRIM(ctd_section)                               AS ctd_section,
         TRIM(compendia_reference)                       AS compendia_reference,
         TRIM(regulatory_basis)                          AS regulatory_basis,
@@ -371,11 +366,9 @@ USING (
             ELSE UPPER(TRIM(stage))
         END                                             AS stage_code,
         UPPER(TRIM(stability_condition))                AS stability_condition,
-
         TRY_CAST(effective_date AS DATE)                AS effective_date,
         TRY_CAST(approval_date AS DATE)                 AS approval_date,
         TRIM(approved_by)                               AS approved_by,
-
         CASE WHEN spec_number IS NOT NULL THEN TRUE ELSE FALSE END AS dq_spec_number_present,
         CASE WHEN TRY_CAST(lower_limit AS DECIMAL(18,6)) IS NULL AND lower_limit IS NOT NULL THEN TRUE ELSE FALSE END AS dq_numeric_cast_error,
         CASE WHEN TRY_CAST(effective_date AS DATE) IS NULL AND effective_date IS NOT NULL THEN TRUE ELSE FALSE END AS dq_date_parse_error,
@@ -385,12 +378,61 @@ USING (
     FROM l1_raw.raw_pdf_specification
     WHERE document_id IS NOT NULL
     QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY document_id, COALESCE(test_code, test_name), COALESCE(limit_type, 'AC'), COALESCE(stage, 'Release')
+        PARTITION BY source_row_key
         ORDER BY _ingestion_timestamp DESC
     ) = 1
 ) AS src
 ON tgt.source_row_key = src.source_row_key
-WHEN MATCHED THEN UPDATE SET *
+WHEN MATCHED THEN UPDATE SET
+    source_document_id = src.source_document_id,
+    source_row_key = src.source_row_key,
+    source_batch_id = src.source_batch_id,
+    source_ingestion_timestamp = src.source_ingestion_timestamp,
+    record_hash = src.record_hash,
+    document_name = src.document_name,
+    document_version = src.document_version,
+    document_type = src.document_type,
+    sop_number = src.sop_number,
+    page_number = src.page_number,
+    section_reference = src.section_reference,
+    transcription_date = src.transcription_date,
+    transcribed_by = src.transcribed_by,
+    spec_number = src.spec_number,
+    spec_version = src.spec_version,
+    spec_title = src.spec_title,
+    spec_type_code = src.spec_type_code,
+    product_id_pdf = src.product_id_pdf,
+    product_name = src.product_name,
+    material_id_pdf = src.material_id_pdf,
+    material_name = src.material_name,
+    site_name = src.site_name,
+    market_region = src.market_region,
+    test_code = src.test_code,
+    test_name = src.test_name,
+    test_category_code = src.test_category_code,
+    test_method_reference = src.test_method_reference,
+    uom_code = src.uom_code,
+    criticality_code = src.criticality_code,
+    limit_type_code = src.limit_type_code,
+    lower_limit_value = src.lower_limit_value,
+    upper_limit_value = src.upper_limit_value,
+    target_value = src.target_value,
+    limit_text = src.limit_text,
+    limit_expression = src.limit_expression,
+    ctd_section = src.ctd_section,
+    compendia_reference = src.compendia_reference,
+    regulatory_basis = src.regulatory_basis,
+    stage_code = src.stage_code,
+    stability_condition = src.stability_condition,
+    effective_date = src.effective_date,
+    approval_date = src.approval_date,
+    approved_by = src.approved_by,
+    dq_spec_number_present = src.dq_spec_number_present,
+    dq_numeric_cast_error = src.dq_numeric_cast_error,
+    dq_date_parse_error = src.dq_date_parse_error,
+    dq_limit_type_mapped = src.dq_limit_type_mapped,
+    load_timestamp = src.load_timestamp,
+    is_current = src.is_current
 WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
