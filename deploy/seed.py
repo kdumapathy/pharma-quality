@@ -1,7 +1,8 @@
 """
 seed.py — Run sample data and validation queries against Databricks
 ====================================================================
-Executes sample_data/seed_e2e_sample.sql and sample_data/populate_dspec.sql:
+Executes sample_data/seed_e2e_sample.sql, sample_data/populate_l3.sql,
+and sample_data/populate_dspec.sql:
   - INSERT statements load E2E sample data across all layers
   - dspec_specification is populated from the L2.2 star schema
   - SELECT statements run validation queries and print results
@@ -27,6 +28,7 @@ DATABRICKS_CATALOG   = _cfg.get("DATABRICKS_CATALOG", "pharma_quality")
 
 SEED_FILES = [
     PROJECT_ROOT / "sample_data" / "seed_e2e_sample.sql",
+    PROJECT_ROOT / "sample_data" / "populate_l3.sql",
     PROJECT_ROOT / "sample_data" / "populate_dspec.sql",
 ]
 
