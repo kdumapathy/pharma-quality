@@ -13,7 +13,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-USE SCHEMA l2_2_spec_unified;
+USE SCHEMA l2_2_unified_model;
 
 -- COMMAND ----------
 

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_regulatory_context
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per regulatory region / submission type combination
@@ -11,7 +11,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_regulatory_context
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_regulatory_context
 (
     -- -------------------------------------------------------------------------
     -- Keys
@@ -86,7 +86,7 @@ TBLPROPERTIES (
 -- SEED DATA — Common Regulatory Contexts
 -- =============================================================================
 
-INSERT INTO l2_2_spec_unified.dim_regulatory_context
+INSERT INTO l2_2_unified_model.dim_regulatory_context
     (regulatory_context_code, region_code, region_name, regulatory_body,
      submission_type, guideline_code, guideline_name, ctd_module, ctd_section, load_timestamp)
 VALUES

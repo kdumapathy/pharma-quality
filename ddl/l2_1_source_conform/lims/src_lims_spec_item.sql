@@ -1,13 +1,13 @@
 -- =============================================================================
 -- Table  : src_lims_spec_item
--- Schema : l2_1_lims
+-- Schema : l2_1_scl
 -- Layer  : L2.1 — Source Conform Layer (LIMS-specific)
 -- Source : l1_raw.raw_lims_spec_item
 -- Grain  : One row per LIMS spec item (latest, deduplicated)
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_lims_spec_item
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_lims_spec_item
 (
     source_spec_item_id         STRING          NOT NULL    COMMENT 'LIMS spec item natural key',
     source_specification_id     STRING          NOT NULL    COMMENT 'LIMS parent spec ID',

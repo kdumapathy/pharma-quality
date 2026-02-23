@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_specification_item
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per test / item per specification version
@@ -14,7 +14,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_specification_item
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_specification_item
 (
     -- -------------------------------------------------------------------------
     -- Keys
@@ -134,7 +134,7 @@ TBLPROPERTIES (
     'quality.grain'                     = 'test_per_specification_version'
 );
 
--- OPTIMIZE l2_2_spec_unified.dim_specification_item ZORDER BY (spec_key, test_code);
+-- OPTIMIZE l2_2_unified_model.dim_specification_item ZORDER BY (spec_key, test_code);
 
 -- -------------------------------------------------------------------------
 -- TEST_CATEGORY_CODE Reference Values

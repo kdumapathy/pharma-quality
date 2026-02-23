@@ -2,7 +2,7 @@
 -- dim_date population
 -- =============================================================================
 -- Source : SEQUENCE generator (no source table — pure calendar arithmetic)
--- Target : l2_2_spec_unified.dim_date
+-- Target : l2_2_unified_model.dim_date
 -- Grain  : One row per calendar date (1990-01-01 to 2100-12-31)
 -- Strategy: INSERT IF EMPTY — skip if already loaded (idempotent guard)
 -- Note   : fiscal_year/quarter/month default to calendar year (adjust per company)
@@ -11,7 +11,7 @@
 
 USE CATALOG pharma_quality;
 
-INSERT INTO l2_2_spec_unified.dim_date
+INSERT INTO l2_2_unified_model.dim_date
 SELECT
     CAST(DATE_FORMAT(d, 'yyyyMMdd') AS INT)                             AS date_key,
     d                                                                   AS full_date,
@@ -43,7 +43,7 @@ SELECT
 FROM (
     SELECT EXPLODE(SEQUENCE(DATE('1990-01-01'), DATE('2100-12-31'), INTERVAL 1 DAY)) AS d
 )
-WHERE NOT EXISTS (SELECT 1 FROM l2_2_spec_unified.dim_date LIMIT 1);
+WHERE NOT EXISTS (SELECT 1 FROM l2_2_unified_model.dim_date LIMIT 1);
 
 -- =============================================================================
 -- Validation
@@ -55,4 +55,4 @@ SELECT
     SUM(CASE WHEN is_weekend   THEN 1 ELSE 0 END) AS weekend_days,
     SUM(CASE WHEN is_year_start THEN 1 ELSE 0 END) AS year_starts,
     SUM(CASE WHEN is_month_end  THEN 1 ELSE 0 END) AS month_ends
-FROM l2_2_spec_unified.dim_date;
+FROM l2_2_unified_model.dim_date;

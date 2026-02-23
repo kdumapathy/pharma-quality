@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_specification
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per specification version (SCD Type 2)
@@ -12,7 +12,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_specification
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_specification
 (
     -- -------------------------------------------------------------------------
     -- Keys
@@ -132,7 +132,7 @@ TBLPROPERTIES (
 );
 
 -- Optimize read performance on common filter patterns
--- OPTIMIZE l2_2_spec_unified.dim_specification ZORDER BY (spec_number, spec_version);
+-- OPTIMIZE l2_2_unified_model.dim_specification ZORDER BY (spec_number, spec_version);
 
 -- -------------------------------------------------------------------------
 -- SPEC_TYPE_CODE Reference Values

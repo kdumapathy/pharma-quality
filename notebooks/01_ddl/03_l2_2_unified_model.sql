@@ -16,7 +16,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-USE SCHEMA l2_2_spec_unified;
+USE SCHEMA l2_2_unified_model;
 
 -- COMMAND ----------
 
@@ -31,7 +31,7 @@ USE SCHEMA l2_2_spec_unified;
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_date
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_date
 (
     date_key                    INT             NOT NULL    COMMENT 'Surrogate key (YYYYMMDD integer)',
     full_date                   DATE            NOT NULL    COMMENT 'Calendar date',
@@ -64,7 +64,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_uom
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_uom
 (
     uom_key                     INT             NOT NULL    COMMENT 'Surrogate key',
     uom_code                    STRING          NOT NULL    COMMENT 'Standardized unit code (mg, %, ppm, CFU, etc.)',
@@ -91,7 +91,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_limit_type
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_limit_type
 (
     limit_type_key              INT             NOT NULL    COMMENT 'Surrogate key',
     limit_type_code             STRING          NOT NULL    COMMENT 'Code: AC|NOR|PAR|ALERT|ACTION|IPC_LIMIT|REPORT',
@@ -118,7 +118,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_regulatory_context
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_regulatory_context
 (
     regulatory_context_key      INT             NOT NULL    COMMENT 'Surrogate key',
     region_code                 STRING          NOT NULL    COMMENT 'Region: US|EU|JP|CN|ROW',
@@ -151,7 +151,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_product
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_product
 (
     product_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
     product_id                  STRING          NOT NULL    COMMENT 'MDM-resolved product ID',
@@ -185,7 +185,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_material
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_material
 (
     material_key                BIGINT          NOT NULL    COMMENT 'Surrogate key',
     material_id                 STRING          NOT NULL    COMMENT 'MDM-resolved material ID',
@@ -218,7 +218,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_test_method
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_test_method
 (
     test_method_key             BIGINT          NOT NULL    COMMENT 'Surrogate key',
     test_method_id              STRING          NOT NULL    COMMENT 'MDM-resolved method ID',
@@ -252,7 +252,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_site
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_site
 (
     site_key                    BIGINT          NOT NULL    COMMENT 'Surrogate key',
     site_id                     STRING          NOT NULL    COMMENT 'MDM-resolved site ID',
@@ -284,7 +284,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_market
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_market
 (
     market_key                  BIGINT          NOT NULL    COMMENT 'Surrogate key',
     market_code                 STRING          NOT NULL    COMMENT 'Market code',
@@ -317,7 +317,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_specification
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_specification
 (
     spec_key                    BIGINT          NOT NULL    COMMENT 'Surrogate key',
     source_specification_id     STRING          NOT NULL    COMMENT 'Source system natural key',
@@ -367,7 +367,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_specification_item
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_specification_item
 (
     spec_item_key               BIGINT          NOT NULL    COMMENT 'Surrogate key',
     source_spec_item_id         STRING          NOT NULL    COMMENT 'Source system natural key',
@@ -418,7 +418,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.fact_specification_limit
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.fact_specification_limit
 (
     spec_limit_key              BIGINT          NOT NULL    COMMENT 'Surrogate key',
     spec_key                    BIGINT          NOT NULL    COMMENT 'FK → dim_specification',
@@ -483,7 +483,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dspec_specification
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dspec_specification
 (
     dspec_key                   BIGINT          NOT NULL    COMMENT 'Surrogate key',
     spec_key                    BIGINT          NOT NULL    COMMENT 'FK → dim_specification',
@@ -573,7 +573,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_batch
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_batch
 (
     batch_key                   BIGINT          NOT NULL    COMMENT 'Surrogate key',
     batch_number                STRING          NOT NULL    COMMENT 'Manufacturing batch / lot number',
@@ -606,7 +606,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_stability_condition
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_stability_condition
 (
     condition_key               INT             NOT NULL    COMMENT 'Surrogate key',
     condition_code              STRING          NOT NULL    COMMENT 'Code: 25C60RH|30C65RH|40C75RH|5C|REFRIG|FREEZER',
@@ -633,7 +633,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_timepoint
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_timepoint
 (
     timepoint_key               INT             NOT NULL    COMMENT 'Surrogate key',
     timepoint_code              STRING          NOT NULL    COMMENT 'Code: T0|T1M|T3M|T6M|T9M|T12M|T18M|T24M|T36M',
@@ -659,7 +659,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_instrument
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_instrument
 (
     instrument_key              BIGINT          NOT NULL    COMMENT 'Surrogate key',
     instrument_id               STRING          NOT NULL    COMMENT 'Instrument ID',
@@ -690,7 +690,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.fact_analytical_result
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.fact_analytical_result
 (
     analytical_result_key       BIGINT          NOT NULL    COMMENT 'Surrogate key',
     batch_key                   BIGINT          NOT NULL    COMMENT 'FK → dim_batch',
@@ -748,4 +748,4 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-SHOW TABLES IN l2_2_spec_unified;
+SHOW TABLES IN l2_2_unified_model;
