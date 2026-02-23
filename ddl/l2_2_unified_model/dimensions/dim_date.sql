@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_date
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Shared / Common (used across all quality domains)
 -- Grain  : One row per calendar date
@@ -9,7 +9,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_date
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_date
 (
     date_key                    INT             NOT NULL    COMMENT 'Surrogate key as integer YYYYMMDD (e.g., 20240115)',
     full_date                   DATE            NOT NULL    COMMENT 'Calendar date value',
@@ -60,7 +60,7 @@ TBLPROPERTIES (
 -- =============================================================================
 -- Population Query (run once to generate dates from 1990 to 2100)
 -- =============================================================================
--- INSERT INTO l2_2_spec_unified.dim_date
+-- INSERT INTO l2_2_unified_model.dim_date
 -- SELECT
 --     CAST(DATE_FORMAT(d, 'yyyyMMdd') AS INT)         AS date_key,
 --     d                                               AS full_date,

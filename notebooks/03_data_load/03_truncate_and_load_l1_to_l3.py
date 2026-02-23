@@ -28,9 +28,9 @@ DRY_RUN = False
 
 # Curated schemas to truncate prior to full reload.
 TARGET_SCHEMAS = [
-    "l2_1_lims",
-    "l2_2_spec_unified",
-    "l3_spec_products",
+    "l2_1_scl",
+    "l2_2_unified_model",
+    "l3_data_product",
 ]
 
 # COMMAND ----------

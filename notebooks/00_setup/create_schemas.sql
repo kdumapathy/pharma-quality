@@ -6,9 +6,9 @@
 -- MAGIC | Layer | Schema | Description |
 -- MAGIC |-------|--------|-------------|
 -- MAGIC | L1 | `l1_raw` | Raw ingestion from source systems, immutable |
--- MAGIC | L2.1 | `l2_1_lims` | Source-specific cleansing and typing (LIMS) |
--- MAGIC | L2.2 | `l2_2_spec_unified` | Star schema + denormalized tables |
--- MAGIC | L3 | `l3_spec_products` | One Big Table (OBT), CTD-ready final products |
+-- MAGIC | L2.1 | `l2_1_scl` | Source-specific cleansing and typing (LIMS) |
+-- MAGIC | L2.2 | `l2_2_unified_model` | Star schema + denormalized tables |
+-- MAGIC | L3 | `l3_data_product` | One Big Table (OBT), CTD-ready final products |
 
 -- COMMAND ----------
 
@@ -25,17 +25,17 @@ COMMENT 'L1 Raw landing zone — immutable source-faithful ingestion';
 
 -- COMMAND ----------
 
-CREATE SCHEMA IF NOT EXISTS l2_1_lims
+CREATE SCHEMA IF NOT EXISTS l2_1_scl
 COMMENT 'L2.1 Source conform layer — LIMS cleansed, typed, and standardised';
 
 -- COMMAND ----------
 
-CREATE SCHEMA IF NOT EXISTS l2_2_spec_unified
+CREATE SCHEMA IF NOT EXISTS l2_2_unified_model
 COMMENT 'L2.2 Pharma Quality Unified Data Model — Specifications domain';
 
 -- COMMAND ----------
 
-CREATE SCHEMA IF NOT EXISTS l3_spec_products
+CREATE SCHEMA IF NOT EXISTS l3_data_product
 COMMENT 'L3 Final Data Products — Specifications domain (CTD-ready OBTs)';
 
 -- COMMAND ----------

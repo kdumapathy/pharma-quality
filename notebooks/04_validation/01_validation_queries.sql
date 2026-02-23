@@ -29,45 +29,45 @@ UNION ALL
 SELECT 'L1: raw_lims_spec_limit',    COUNT(*) FROM l1_raw.raw_lims_spec_limit
 UNION ALL
 -- L2.1 Source Conform
-SELECT 'L2.1: src_lims_specification', COUNT(*) FROM l2_1_lims.src_lims_specification
+SELECT 'L2.1: src_lims_specification', COUNT(*) FROM l2_1_scl.src_lims_specification
 UNION ALL
-SELECT 'L2.1: src_lims_spec_item',    COUNT(*) FROM l2_1_lims.src_lims_spec_item
+SELECT 'L2.1: src_lims_spec_item',    COUNT(*) FROM l2_1_scl.src_lims_spec_item
 UNION ALL
-SELECT 'L2.1: src_lims_spec_limit',   COUNT(*) FROM l2_1_lims.src_lims_spec_limit
+SELECT 'L2.1: src_lims_spec_limit',   COUNT(*) FROM l2_1_scl.src_lims_spec_limit
 UNION ALL
 -- L2.2 Reference Dimensions
-SELECT 'L2.2: dim_date',              COUNT(*) FROM l2_2_spec_unified.dim_date
+SELECT 'L2.2: dim_date',              COUNT(*) FROM l2_2_unified_model.dim_date
 UNION ALL
-SELECT 'L2.2: dim_uom',               COUNT(*) FROM l2_2_spec_unified.dim_uom
+SELECT 'L2.2: dim_uom',               COUNT(*) FROM l2_2_unified_model.dim_uom
 UNION ALL
-SELECT 'L2.2: dim_limit_type',        COUNT(*) FROM l2_2_spec_unified.dim_limit_type
+SELECT 'L2.2: dim_limit_type',        COUNT(*) FROM l2_2_unified_model.dim_limit_type
 UNION ALL
-SELECT 'L2.2: dim_regulatory_context', COUNT(*) FROM l2_2_spec_unified.dim_regulatory_context
+SELECT 'L2.2: dim_regulatory_context', COUNT(*) FROM l2_2_unified_model.dim_regulatory_context
 UNION ALL
 -- L2.2 MDM Dimensions
-SELECT 'L2.2: dim_product',           COUNT(*) FROM l2_2_spec_unified.dim_product
+SELECT 'L2.2: dim_product',           COUNT(*) FROM l2_2_unified_model.dim_product
 UNION ALL
-SELECT 'L2.2: dim_material',          COUNT(*) FROM l2_2_spec_unified.dim_material
+SELECT 'L2.2: dim_material',          COUNT(*) FROM l2_2_unified_model.dim_material
 UNION ALL
-SELECT 'L2.2: dim_test_method',       COUNT(*) FROM l2_2_spec_unified.dim_test_method
+SELECT 'L2.2: dim_test_method',       COUNT(*) FROM l2_2_unified_model.dim_test_method
 UNION ALL
-SELECT 'L2.2: dim_site',              COUNT(*) FROM l2_2_spec_unified.dim_site
+SELECT 'L2.2: dim_site',              COUNT(*) FROM l2_2_unified_model.dim_site
 UNION ALL
-SELECT 'L2.2: dim_market',            COUNT(*) FROM l2_2_spec_unified.dim_market
+SELECT 'L2.2: dim_market',            COUNT(*) FROM l2_2_unified_model.dim_market
 UNION ALL
-SELECT 'L2.2: dim_specification',     COUNT(*) FROM l2_2_spec_unified.dim_specification
+SELECT 'L2.2: dim_specification',     COUNT(*) FROM l2_2_unified_model.dim_specification
 UNION ALL
-SELECT 'L2.2: dim_specification_item', COUNT(*) FROM l2_2_spec_unified.dim_specification_item
+SELECT 'L2.2: dim_specification_item', COUNT(*) FROM l2_2_unified_model.dim_specification_item
 UNION ALL
 -- L2.2 Fact + Denormalized
-SELECT 'L2.2: fact_specification_limit', COUNT(*) FROM l2_2_spec_unified.fact_specification_limit
+SELECT 'L2.2: fact_specification_limit', COUNT(*) FROM l2_2_unified_model.fact_specification_limit
 UNION ALL
-SELECT 'L2.2: dspec_specification',    COUNT(*) FROM l2_2_spec_unified.dspec_specification
+SELECT 'L2.2: dspec_specification',    COUNT(*) FROM l2_2_unified_model.dspec_specification
 UNION ALL
 -- L3 Final Products
-SELECT 'L3: obt_specification_ctd',   COUNT(*) FROM l3_spec_products.obt_specification_ctd
+SELECT 'L3: obt_specification_ctd',   COUNT(*) FROM l3_data_product.obt_specification_ctd
 UNION ALL
-SELECT 'L3: obt_acceptance_criteria', COUNT(*) FROM l3_spec_products.obt_acceptance_criteria
+SELECT 'L3: obt_acceptance_criteria', COUNT(*) FROM l3_data_product.obt_acceptance_criteria
 ORDER BY table_name;
 
 -- COMMAND ----------
@@ -79,21 +79,21 @@ ORDER BY table_name;
 
 SELECT 'dim_uom' AS dimension, COUNT(*) AS total,
        COUNT(DISTINCT uom_category) AS categories
-FROM l2_2_spec_unified.dim_uom;
+FROM l2_2_unified_model.dim_uom;
 
 -- COMMAND ----------
 
 SELECT 'dim_limit_type' AS dimension, COUNT(*) AS total,
        COUNT(CASE WHEN is_regulatory = TRUE THEN 1 END) AS regulatory_types,
        COUNT(CASE WHEN is_regulatory = FALSE THEN 1 END) AS internal_types
-FROM l2_2_spec_unified.dim_limit_type;
+FROM l2_2_unified_model.dim_limit_type;
 
 -- COMMAND ----------
 
 SELECT 'dim_regulatory_context' AS dimension, COUNT(*) AS total,
        COUNT(DISTINCT region_code) AS regions,
        COUNT(DISTINCT submission_type) AS submission_types
-FROM l2_2_spec_unified.dim_regulatory_context;
+FROM l2_2_unified_model.dim_regulatory_context;
 
 -- COMMAND ----------
 
@@ -105,8 +105,8 @@ FROM l2_2_spec_unified.dim_regulatory_context;
 -- Fact → dim_specification (orphan check)
 SELECT 'fact → dim_specification' AS fk_check,
        COUNT(*) AS orphan_rows
-FROM l2_2_spec_unified.fact_specification_limit f
-LEFT JOIN l2_2_spec_unified.dim_specification s ON f.spec_key = s.spec_key
+FROM l2_2_unified_model.fact_specification_limit f
+LEFT JOIN l2_2_unified_model.dim_specification s ON f.spec_key = s.spec_key
 WHERE s.spec_key IS NULL;
 
 -- COMMAND ----------
@@ -114,8 +114,8 @@ WHERE s.spec_key IS NULL;
 -- Fact → dim_specification_item (orphan check)
 SELECT 'fact → dim_specification_item' AS fk_check,
        COUNT(*) AS orphan_rows
-FROM l2_2_spec_unified.fact_specification_limit f
-LEFT JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+FROM l2_2_unified_model.fact_specification_limit f
+LEFT JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
 WHERE i.spec_item_key IS NULL;
 
 -- COMMAND ----------
@@ -123,8 +123,8 @@ WHERE i.spec_item_key IS NULL;
 -- Fact → dim_limit_type (orphan check)
 SELECT 'fact → dim_limit_type' AS fk_check,
        COUNT(*) AS orphan_rows
-FROM l2_2_spec_unified.fact_specification_limit f
-LEFT JOIN l2_2_spec_unified.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
+FROM l2_2_unified_model.fact_specification_limit f
+LEFT JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
 WHERE lt.limit_type_key IS NULL;
 
 -- COMMAND ----------
@@ -132,8 +132,8 @@ WHERE lt.limit_type_key IS NULL;
 -- dim_specification_item → dim_specification (orphan check)
 SELECT 'spec_item → dim_specification' AS fk_check,
        COUNT(*) AS orphan_rows
-FROM l2_2_spec_unified.dim_specification_item i
-LEFT JOIN l2_2_spec_unified.dim_specification s ON i.spec_key = s.spec_key
+FROM l2_2_unified_model.dim_specification_item i
+LEFT JOIN l2_2_unified_model.dim_specification s ON i.spec_key = s.spec_key
 WHERE s.spec_key IS NULL;
 
 -- COMMAND ----------
@@ -169,10 +169,10 @@ SELECT
          MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) OR
          MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) IS NULL)
     THEN 'VALID' ELSE 'VIOLATION' END AS hierarchy_status
-FROM l2_2_spec_unified.fact_specification_limit f
-JOIN l2_2_spec_unified.dim_specification s ON f.spec_key = s.spec_key
-JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
-JOIN l2_2_spec_unified.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
+FROM l2_2_unified_model.fact_specification_limit f
+JOIN l2_2_unified_model.dim_specification s ON f.spec_key = s.spec_key
+JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
 WHERE f.is_current = TRUE
   AND f.stage_code = 'RELEASE'
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
@@ -188,7 +188,7 @@ ORDER BY s.spec_number, i.test_name;
 
 -- CTD OBT breakdown by spec type and stage
 SELECT spec_type_code, stage_code, COUNT(*) AS rows
-FROM l3_spec_products.obt_specification_ctd
+FROM l3_data_product.obt_specification_ctd
 GROUP BY spec_type_code, stage_code
 ORDER BY spec_type_code, stage_code;
 
@@ -199,7 +199,7 @@ SELECT spec_number, test_name, ac_lower_limit, ac_upper_limit, ac_width,
        nor_lower_limit, nor_upper_limit, nor_width,
        par_lower_limit, par_upper_limit, par_width,
        nor_tightness_pct, par_vs_ac_factor, is_hierarchy_valid
-FROM l3_spec_products.obt_acceptance_criteria
+FROM l3_data_product.obt_acceptance_criteria
 ORDER BY spec_number, sequence_number;
 
 -- COMMAND ----------
@@ -213,7 +213,7 @@ SELECT spec_number, spec_version, test_name,
        ac_limit_description, nor_limit_description, par_limit_description,
        alert_limit_description, action_limit_description,
        is_hierarchy_valid
-FROM l2_2_spec_unified.dspec_specification
+FROM l2_2_unified_model.dspec_specification
 WHERE is_current = TRUE
 ORDER BY spec_number, sequence_number;
 

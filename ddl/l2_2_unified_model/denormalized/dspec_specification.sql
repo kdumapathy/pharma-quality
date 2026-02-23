@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dspec_specification
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer) — Denormalized
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per specification item with all limit types pivoted as columns
@@ -31,7 +31,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dspec_specification
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dspec_specification
 (
     -- =========================================================================
     -- SECTION A: SPECIFICATION HEADER (from dim_specification)
@@ -214,7 +214,7 @@ TBLPROPERTIES (
     'quality.ctd_sections'             = '3.2.S.4.1,3.2.P.5.1'
 );
 
--- OPTIMIZE l2_2_spec_unified.dspec_specification ZORDER BY (spec_number, test_code);
+-- OPTIMIZE l2_2_unified_model.dspec_specification ZORDER BY (spec_number, test_code);
 
 -- =============================================================================
 -- POPULATION QUERY — Pivot from Normalized Fact to Denormalized Table
@@ -223,7 +223,7 @@ TBLPROPERTIES (
 -- Run as OVERWRITE to ensure consistency.
 -- v2: added dim_site, dim_market joins; analyte_code, criticality; SPC fields.
 --
--- INSERT OVERWRITE l2_2_spec_unified.dspec_specification
+-- INSERT OVERWRITE l2_2_unified_model.dspec_specification
 -- SELECT
 --     -- Section A: Spec Header
 --     s.spec_key,
@@ -371,28 +371,28 @@ TBLPROPERTIES (
 --     current_timestamp()                                         AS load_timestamp,
 --     TRUE                                                        AS is_current
 --
--- FROM l2_2_spec_unified.dim_specification s
--- JOIN l2_2_spec_unified.dim_specification_item i
+-- FROM l2_2_unified_model.dim_specification s
+-- JOIN l2_2_unified_model.dim_specification_item i
 --     ON s.spec_key = i.spec_key AND i.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.fact_specification_limit f
+-- LEFT JOIN l2_2_unified_model.fact_specification_limit f
 --     ON i.spec_item_key = f.spec_item_key AND f.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_limit_type lt
+-- LEFT JOIN l2_2_unified_model.dim_limit_type lt
 --     ON f.limit_type_key = lt.limit_type_key
--- LEFT JOIN l2_2_spec_unified.dim_product p
+-- LEFT JOIN l2_2_unified_model.dim_product p
 --     ON s.product_key = p.product_key AND p.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_material m
+-- LEFT JOIN l2_2_unified_model.dim_material m
 --     ON s.material_key = m.material_key AND m.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_regulatory_context rc
+-- LEFT JOIN l2_2_unified_model.dim_regulatory_context rc
 --     ON s.regulatory_context_key = rc.regulatory_context_key
--- LEFT JOIN l2_2_spec_unified.dim_site st
+-- LEFT JOIN l2_2_unified_model.dim_site st
 --     ON s.site_key = st.site_key AND st.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_market mk
+-- LEFT JOIN l2_2_unified_model.dim_market mk
 --     ON s.market_key = mk.market_key AND mk.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_test_method tm
+-- LEFT JOIN l2_2_unified_model.dim_test_method tm
 --     ON i.test_method_key = tm.test_method_key AND tm.is_current = TRUE
--- LEFT JOIN l2_2_spec_unified.dim_uom u
+-- LEFT JOIN l2_2_unified_model.dim_uom u
 --     ON i.uom_key = u.uom_key
--- LEFT JOIN l2_2_spec_unified.dim_uom fu
+-- LEFT JOIN l2_2_unified_model.dim_uom fu
 --     ON f.uom_key = fu.uom_key
 -- WHERE s.is_current = TRUE
 -- GROUP BY
