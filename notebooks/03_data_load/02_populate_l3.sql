@@ -252,7 +252,7 @@ GROUP BY
 
 -- COMMAND ----------
 
--- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (fix criticality_code)
+-- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (filter null test_name)
 TRUNCATE TABLE l3_spec_products.obt_stability_results;
 
 INSERT INTO l3_spec_products.obt_stability_results (
@@ -279,7 +279,6 @@ INSERT INTO l3_spec_products.obt_stability_results (
     test_category_name,
     criticality_code,
     method_name,
-    technique,
     stability_study_id,
     storage_condition_code,
     storage_condition_name,
@@ -331,9 +330,8 @@ SELECT
     i.test_code,
     i.test_category_code,
     i.test_category_name,
-    i.criticality_code,
-    tm.method_name,
-    tm.technique,
+    i.criticality AS criticality_code,
+    tm.test_method_name AS method_name,
     f.stability_study_id,
     sc.condition_code                   AS storage_condition_code,
     sc.condition_name                   AS storage_condition_name,
@@ -384,7 +382,8 @@ LEFT JOIN (
       AND fsl.is_current = TRUE
       AND COALESCE(fsl.stage_code, 'RELEASE') = 'RELEASE'
     QUALIFY ROW_NUMBER() OVER (PARTITION BY fsl.spec_item_key ORDER BY fsl.load_timestamp DESC) = 1
-) ac_lim ON f.spec_item_key = ac_lim.spec_item_key;
+) ac_lim ON f.spec_item_key = ac_lim.spec_item_key
+WHERE i.test_name IS NOT NULL;
 
 
 -- COMMAND ----------
