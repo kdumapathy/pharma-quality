@@ -84,3 +84,24 @@ See [docs/unified_data_model_specification.md](docs/unified_data_model_specifica
 - Business rules and limit definitions
 - Partition and optimization strategy
 - Data lineage summary
+
+## Deployment Automation
+
+For schema/DDL updates followed by a full pipeline refresh, use:
+
+```bash
+python deploy/full_deploy.py
+```
+
+This orchestrator runs:
+1. `deploy/deploy.py` (schemas + DDL)
+2. `deploy/seed.py` (sample raw seed data)
+3. `notebooks/03_data_load/*.sql` (L2/L3 loads)
+4. `notebooks/04_validation/01_validation_queries.sql` (validation checks)
+
+Helpful options:
+- `--dry-run` to preview commands/statements
+- `--skip-seed` if raw data is already loaded
+- `--skip-validation` to stop after load
+- `--validation-only` to run only validation SELECT queries
+
