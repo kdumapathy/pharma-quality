@@ -98,7 +98,7 @@ SELECT
     mk.country_name AS market_country_name,
     mk.market_status,
     s.compendia_reference,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
     i.test_category_name,
@@ -176,7 +176,7 @@ SELECT
     m.material_name,
     p.dosage_form_name,
     p.strength,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_category_code,
     i.sequence_number,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.lower_limit_value END) AS ac_lower_limit,
@@ -235,12 +235,13 @@ LEFT JOIN l2_2_spec_unified.dim_product p        ON s.product_key = p.product_ke
 LEFT JOIN l2_2_spec_unified.dim_material m       ON s.material_key = m.material_key
 LEFT JOIN l2_2_spec_unified.dim_uom u            ON i.uom_key = u.uom_key
 WHERE f.is_current = TRUE
-  AND f.stage_code = 'RELEASE'
+  AND COALESCE(UPPER(TRIM(f.stage_code)), 'RELEASE') IN ('RELEASE', 'BOTH')
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
 GROUP BY
     s.spec_number, s.spec_version, s.spec_type_code, s.stage_code,
     p.product_name, m.material_name, p.dosage_form_name, p.strength,
-    i.test_name, i.test_category_code,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'),
+    i.test_category_code,
     i.sequence_number
 ;
 
@@ -326,12 +327,13 @@ SELECT
     s.spec_number,
     s.spec_version,
     s.spec_type_code,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
     i.test_category_name,
     i.criticality AS criticality_code,
-    tm.test_method_name AS method_name,
+    tm.test_method_name                 AS method_name,
+    tm.analytical_technique             AS technique,
     f.stability_study_id,
     sc.condition_code                   AS storage_condition_code,
     sc.condition_name                   AS storage_condition_name,
