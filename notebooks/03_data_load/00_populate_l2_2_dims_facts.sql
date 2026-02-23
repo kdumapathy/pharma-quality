@@ -272,12 +272,15 @@ VALUES (
 -- DBTITLE 1,Cell 15
 MERGE INTO dim_specification AS tgt
 USING (
+    WITH src_specs AS (
     -- From LIMS
     SELECT
         s.source_specification_id           AS spec_id,
         s.spec_number, s.spec_version, s.spec_title, s.spec_type_code, s.spec_type_name,
-        HASH(s.product_id_lims) AS product_key, HASH(s.material_id_lims) AS material_key,
-        HASH(s.site_id_lims) AS site_key, HASH(s.market_region) AS market_key,
+        s.product_id_lims AS product_id,
+        s.material_id_lims AS material_id,
+        s.site_id_lims AS site_id,
+        s.market_region AS market_id,
         CAST(NULL AS BIGINT) AS regulatory_context_key,
         s.ctd_section,
         s.stage_code, CAST(NULL AS STRING) AS stage_name,
@@ -301,8 +304,10 @@ USING (
         CONCAT('PDF:', p.source_document_id) AS spec_id,
         p.spec_number, p.spec_version, p.spec_title, p.spec_type_code,
         CAST(NULL AS STRING) AS spec_type_name,
-        HASH(p.product_id_pdf) AS product_key, HASH(p.material_id_pdf) AS material_key,
-        CAST(NULL AS BIGINT) AS site_key, HASH(p.market_region) AS market_key,
+        p.product_id_pdf AS product_id,
+        p.material_id_pdf AS material_id,
+        CAST(NULL AS STRING) AS site_id,
+        p.market_region AS market_id,
         CAST(NULL AS BIGINT) AS regulatory_context_key,
         p.ctd_section,
         p.stage_code, CAST(NULL AS STRING) AS stage_name,
@@ -319,6 +324,42 @@ USING (
     FROM l2_1_lims.src_pdf_specification p
     WHERE p.is_current = TRUE
     QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number ORDER BY p.source_ingestion_timestamp DESC) = 1
+    )
+    SELECT
+        src.spec_id,
+        src.spec_number,
+        src.spec_version,
+        src.spec_title,
+        src.spec_type_code,
+        src.spec_type_name,
+        dp.product_key,
+        dm.material_key,
+        ds.site_key,
+        dmk.market_key,
+        src.regulatory_context_key,
+        src.ctd_section,
+        src.stage_code,
+        src.stage_name,
+        src.status_code,
+        src.status_name,
+        src.effective_start_date,
+        src.effective_end_date,
+        src.approval_date,
+        src.approver_name,
+        src.approver_title,
+        src.compendia_reference,
+        src.supersedes_spec_id,
+        src.source_system_code,
+        src.source_system_id,
+        src.load_timestamp,
+        src.is_current,
+        src.valid_from,
+        src.valid_to
+    FROM src_specs src
+    LEFT JOIN dim_product dp ON dp.product_id = src.product_id
+    LEFT JOIN dim_material dm ON dm.material_id = src.material_id
+    LEFT JOIN dim_site ds ON ds.site_id = src.site_id
+    LEFT JOIN dim_market dmk ON dmk.market_id = src.market_id
 ) AS src
 ON tgt.spec_id = src.spec_id
 WHEN MATCHED THEN UPDATE SET
@@ -367,14 +408,16 @@ VALUES (
 -- DBTITLE 1,Cell 17
 MERGE INTO dim_specification_item AS tgt
 USING (
+    WITH src_items AS (
     -- From LIMS
     SELECT
-        HASH(i.source_spec_item_id)         AS spec_item_key,
         i.source_spec_item_id               AS spec_item_id,
-        HASH(i.source_specification_id)     AS spec_key,
-        HASH(i.test_method_id_lims)         AS test_method_key,
-        u.uom_key,
-        i.test_code, i.test_name, CAST(NULL AS STRING) AS test_description,
+        i.source_specification_id AS source_specification_id,
+        i.test_method_id_lims AS test_method_id,
+        i.uom_code,
+        i.test_code,
+        COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
+        CAST(NULL AS STRING) AS test_description,
         i.test_category_code, i.test_category_name, i.test_subcategory,
         i.analyte_code, i.criticality_code AS criticality, i.sequence_number, i.is_required, i.reporting_type, i.result_precision, i.compendia_test_ref,
         CAST(NULL AS BOOLEAN) AS is_compendial, i.stage_applicability,
@@ -383,19 +426,19 @@ USING (
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current
     FROM l2_1_lims.src_lims_spec_item i
-    LEFT JOIN dim_uom u ON u.uom_code = i.uom_code
     WHERE i.is_current = TRUE
 
     UNION ALL
 
     -- From PDF (distinct test items per spec not already from LIMS)
     SELECT
-        HASH(CONCAT(p.spec_number, ':', p.test_code)) AS spec_item_key,
         CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS spec_item_id,
-        HASH(p.spec_number)                 AS spec_key,
-        CAST(NULL AS BIGINT)                AS test_method_key,
-        u.uom_key,
-        p.test_code, p.test_name, CAST(NULL AS STRING) AS test_description,
+        CONCAT('PDF:', p.source_document_id) AS source_specification_id,
+        CAST(NULL AS STRING) AS test_method_id,
+        p.uom_code,
+        p.test_code,
+        COALESCE(NULLIF(TRIM(p.test_name), ''), NULLIF(TRIM(p.test_code), ''), 'UNKNOWN_TEST') AS test_name,
+        CAST(NULL AS STRING) AS test_description,
         p.test_category_code, CAST(NULL AS STRING) AS test_category_name, CAST(NULL AS STRING) AS test_subcategory,
         CAST(NULL AS STRING) AS analyte_code, p.criticality_code AS criticality, CAST(NULL AS INT) AS sequence_number, CAST(NULL AS BOOLEAN) AS is_required, 'TEXT' AS reporting_type, CAST(NULL AS INT) AS result_precision, p.test_method_reference AS compendia_test_ref,
         CAST(NULL AS BOOLEAN) AS is_compendial, p.stage_code AS stage_applicability,
@@ -404,9 +447,37 @@ USING (
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current
     FROM l2_1_lims.src_pdf_specification p
-    LEFT JOIN dim_uom u ON u.uom_code = p.uom_code
     WHERE p.is_current = TRUE
     QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number, p.test_code ORDER BY p.source_ingestion_timestamp DESC) = 1
+    )
+    SELECT
+        src.spec_item_id,
+        ds.spec_key,
+        dtm.test_method_key,
+        du.uom_key,
+        src.test_code,
+        src.test_name,
+        src.test_description,
+        src.test_category_code,
+        src.test_category_name,
+        src.test_subcategory,
+        src.analyte_code,
+        src.criticality,
+        src.sequence_number,
+        src.is_required,
+        src.reporting_type,
+        src.result_precision,
+        src.compendia_test_ref,
+        src.is_compendial,
+        src.stage_applicability,
+        src.source_system_code,
+        src.source_system_id,
+        src.load_timestamp,
+        src.is_current
+    FROM src_items src
+    LEFT JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
+    LEFT JOIN dim_test_method dtm ON dtm.test_method_id = src.test_method_id
+    LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
 ) AS src
 ON tgt.spec_item_id = src.spec_item_id
 WHEN MATCHED THEN UPDATE SET
@@ -450,13 +521,13 @@ VALUES (
 -- DBTITLE 1,Cell 19
 MERGE INTO fact_specification_limit AS tgt
 USING (
+    WITH src_limits AS (
     -- LIMS limits (primarily AC, but can include any type)
     SELECT
-        HASH(l.source_limit_id, 'LIMS')    AS spec_limit_key,
-        HASH(l.source_specification_id)     AS spec_key,
-        HASH(l.source_spec_item_id)         AS spec_item_key,
-        lt.limit_type_key,
-        u.uom_key,
+        l.source_specification_id,
+        l.source_spec_item_id,
+        l.limit_type_code,
+        l.uom_code,
         CAST(l.effective_start_date AS DATE) AS effective_date,
         CAST(l.effective_end_date AS DATE)   AS effective_end_date,
         l.lower_limit_value,
@@ -480,19 +551,16 @@ USING (
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_lims.src_lims_spec_limit l
-    JOIN dim_limit_type lt ON lt.limit_type_code = l.limit_type_code
-    LEFT JOIN dim_uom u ON u.uom_code = l.uom_code
     WHERE l.is_current = TRUE
 
     UNION ALL
 
     -- Process Recipe limits (NOR, PAR, Target, Alert, Action)
     SELECT
-        HASH(r.source_recipe_id, r.limit_type_code, COALESCE(r.source_spec_item_id, '')) AS spec_limit_key,
-        HASH(r.source_specification_id)     AS spec_key,
-        HASH(r.source_spec_item_id)         AS spec_item_key,
-        lt.limit_type_key,
-        u.uom_key,
+        r.source_specification_id,
+        r.source_spec_item_id,
+        r.limit_type_code,
+        r.uom_code,
         CAST(r.effective_start_date AS DATE) AS effective_date,
         CAST(r.effective_end_date AS DATE)   AS effective_end_date,
         r.lower_limit_value,
@@ -524,19 +592,16 @@ USING (
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_lims.src_process_recipe r
-    JOIN dim_limit_type lt ON lt.limit_type_code = r.limit_type_code
-    LEFT JOIN dim_uom u ON u.uom_code = r.uom_code
     WHERE r.is_current = TRUE
 
     UNION ALL
 
     -- PDF/SOP document limits (AC, NOR, PAR from transcribed specifications)
     SELECT
-        HASH(p.source_row_key, 'PDF')       AS spec_limit_key,
-        HASH(p.spec_number)                  AS spec_key,
-        HASH(CONCAT(p.spec_number, ':', p.test_code)) AS spec_item_key,
-        lt.limit_type_key,
-        u.uom_key,
+        CONCAT('PDF:', p.source_document_id) AS source_specification_id,
+        CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS source_spec_item_id,
+        p.limit_type_code,
+        p.uom_code,
         CAST(p.effective_date AS DATE)       AS effective_date,
         CAST(NULL AS DATE)                   AS effective_end_date,
         p.lower_limit_value,
@@ -560,11 +625,43 @@ USING (
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_lims.src_pdf_specification p
-    JOIN dim_limit_type lt ON lt.limit_type_code = p.limit_type_code
-    LEFT JOIN dim_uom u ON u.uom_code = p.uom_code
     WHERE p.is_current = TRUE
+    )
+    SELECT
+        ds.spec_key,
+        dsi.spec_item_key,
+        dlt.limit_type_key,
+        du.uom_key,
+        src.effective_date,
+        src.effective_end_date,
+        src.lower_limit_value,
+        src.upper_limit_value,
+        src.target_value,
+        src.lower_limit_operator,
+        src.upper_limit_operator,
+        src.limit_text,
+        src.limit_description,
+        src.limit_basis,
+        src.stage_code,
+        src.stability_time_point,
+        src.stability_condition,
+        src.calculation_method,
+        src.sample_size,
+        src.last_calculated_date,
+        src.is_in_filing,
+        src.regulatory_basis,
+        src.source_system_code,
+        src.source_system_id,
+        src.is_current,
+        src.load_timestamp
+    FROM src_limits src
+    JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
+    JOIN dim_specification_item dsi ON dsi.spec_item_id = src.source_spec_item_id
+    JOIN dim_limit_type dlt ON dlt.limit_type_code = src.limit_type_code
+    LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
 ) AS src
-ON tgt.spec_limit_key = src.spec_limit_key
+ON tgt.source_system_code = src.source_system_code
+AND tgt.source_system_id = src.source_system_id
 WHEN MATCHED THEN UPDATE SET
     spec_key = src.spec_key,
     spec_item_key = src.spec_item_key,
@@ -609,22 +706,40 @@ VALUES (
 
 MERGE INTO dim_batch AS tgt
 USING (
-    SELECT DISTINCT
-        HASH(v.batch_number)                AS batch_key,
-        v.batch_number,
-        v.batch_system_id,
-        HASH(v.product_id_vendor)           AS product_key,
-        HASH(v.site_id_vendor)              AS site_key,
-        v.manufacturing_date,
-        v.expiry_date,
-        v.batch_size,
-        v.batch_size_unit,
-        CAST(NULL AS STRING)                AS batch_status,
-        TRUE                                AS is_active,
-        CURRENT_TIMESTAMP()                 AS load_timestamp
-    FROM l2_1_lims.src_vendor_analytical_results v
-    WHERE v.is_current = TRUE AND v.batch_number IS NOT NULL
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.batch_number ORDER BY v.source_ingestion_timestamp DESC) = 1
+    WITH src_batch AS (
+        SELECT DISTINCT
+            HASH(v.batch_number) AS batch_key,
+            v.batch_number,
+            v.batch_system_id,
+            v.product_id_vendor,
+            v.site_id_vendor,
+            v.manufacturing_date,
+            v.expiry_date,
+            v.batch_size,
+            v.batch_size_unit,
+            CAST(NULL AS STRING) AS batch_status,
+            TRUE AS is_active,
+            CURRENT_TIMESTAMP() AS load_timestamp
+        FROM l2_1_lims.src_vendor_analytical_results v
+        WHERE v.is_current = TRUE AND v.batch_number IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY v.batch_number ORDER BY v.source_ingestion_timestamp DESC) = 1
+    )
+    SELECT
+        sb.batch_key,
+        sb.batch_number,
+        sb.batch_system_id,
+        dp.product_key,
+        ds.site_key,
+        sb.manufacturing_date,
+        sb.expiry_date,
+        sb.batch_size,
+        sb.batch_size_unit,
+        sb.batch_status,
+        sb.is_active,
+        sb.load_timestamp
+    FROM src_batch sb
+    LEFT JOIN dim_product dp ON dp.product_id = sb.product_id_vendor
+    LEFT JOIN dim_site ds ON ds.site_id = sb.site_id_vendor
 ) AS src
 ON tgt.batch_key = src.batch_key
 WHEN MATCHED THEN UPDATE SET
@@ -672,52 +787,91 @@ WHEN NOT MATCHED THEN INSERT *;
 
 MERGE INTO fact_analytical_result AS tgt
 USING (
+    WITH src_results AS (
+        SELECT
+            HASH(v.source_result_id, 'VENDOR') AS analytical_result_key,
+            v.batch_number,
+            v.source_specification_id,
+            v.source_spec_item_id,
+            v.storage_condition_code,
+            v.time_point_code,
+            v.instrument_id_vendor,
+            v.uom_code,
+            CAST(DATE_FORMAT(v.test_date, 'yyyyMMdd') AS INT) AS test_date_key,
+
+            v.result_value,
+            v.result_text,
+            v.result_status_code,
+
+            v.reported_lower_limit,
+            v.reported_upper_limit,
+            v.reported_target,
+
+            -- Derive OOS flag: result outside reported limits
+            CASE
+                WHEN v.result_value IS NOT NULL AND v.reported_lower_limit IS NOT NULL
+                    AND v.result_value < v.reported_lower_limit THEN TRUE
+                WHEN v.result_value IS NOT NULL AND v.reported_upper_limit IS NOT NULL
+                    AND v.result_value > v.reported_upper_limit THEN TRUE
+                WHEN UPPER(v.result_status_code) = 'OOS' THEN TRUE
+                ELSE FALSE
+            END AS is_oos,
+            CASE WHEN UPPER(v.result_status_code) = 'OOT' THEN TRUE ELSE FALSE END AS is_oot,
+
+            v.analyst_name,
+            v.reviewer_name,
+            v.lab_name,
+            v.report_id,
+            v.coa_number,
+            v.stability_study_id,
+
+            v.source_result_id,
+            TRUE AS is_current,
+            CURRENT_TIMESTAMP() AS load_timestamp
+
+        FROM l2_1_lims.src_vendor_analytical_results v
+        WHERE v.is_current = TRUE
+    )
     SELECT
-        HASH(v.source_result_id, 'VENDOR')  AS analytical_result_key,
-        HASH(v.batch_number)                 AS batch_key,
-        HASH(v.source_specification_id)      AS spec_key,
-        HASH(v.source_spec_item_id)          AS spec_item_key,
+        sr.analytical_result_key,
+        db.batch_key,
+        ds.spec_key,
+        dsi.spec_item_key,
         sc.condition_key,
         tp.timepoint_key,
-        HASH(v.instrument_id_vendor)         AS instrument_key,
+        di.instrument_key,
         u.uom_key,
-        CAST(DATE_FORMAT(v.test_date, 'yyyyMMdd') AS INT) AS test_date_key,
+        sr.test_date_key,
 
-        v.result_value,
-        v.result_text,
-        v.result_status_code,
+        sr.result_value,
+        sr.result_text,
+        sr.result_status_code,
 
-        v.reported_lower_limit,
-        v.reported_upper_limit,
-        v.reported_target,
+        sr.reported_lower_limit,
+        sr.reported_upper_limit,
+        sr.reported_target,
 
-        -- Derive OOS flag: result outside reported limits
-        CASE
-            WHEN v.result_value IS NOT NULL AND v.reported_lower_limit IS NOT NULL
-                AND v.result_value < v.reported_lower_limit THEN TRUE
-            WHEN v.result_value IS NOT NULL AND v.reported_upper_limit IS NOT NULL
-                AND v.result_value > v.reported_upper_limit THEN TRUE
-            WHEN UPPER(v.result_status_code) = 'OOS' THEN TRUE
-            ELSE FALSE
-        END                                  AS is_oos,
-        CASE WHEN UPPER(v.result_status_code) = 'OOT' THEN TRUE ELSE FALSE END AS is_oot,
+        sr.is_oos,
+        sr.is_oot,
 
-        v.analyst_name,
-        v.reviewer_name,
-        v.lab_name,
-        v.report_id,
-        v.coa_number,
-        v.stability_study_id,
+        sr.analyst_name,
+        sr.reviewer_name,
+        sr.lab_name,
+        sr.report_id,
+        sr.coa_number,
+        sr.stability_study_id,
 
-        v.source_result_id,
-        TRUE                                 AS is_current,
-        CURRENT_TIMESTAMP()                  AS load_timestamp
-
-    FROM l2_1_lims.src_vendor_analytical_results v
-    LEFT JOIN dim_stability_condition sc ON sc.condition_code = v.storage_condition_code
-    LEFT JOIN dim_timepoint tp ON tp.timepoint_code = v.time_point_code
-    LEFT JOIN dim_uom u ON u.uom_code = v.uom_code
-    WHERE v.is_current = TRUE
+        sr.source_result_id,
+        sr.is_current,
+        sr.load_timestamp
+    FROM src_results sr
+    LEFT JOIN dim_batch db ON db.batch_number = sr.batch_number
+    LEFT JOIN dim_specification ds ON ds.spec_id = sr.source_specification_id
+    LEFT JOIN dim_specification_item dsi ON dsi.spec_item_id = sr.source_spec_item_id
+    LEFT JOIN dim_stability_condition sc ON sc.condition_code = sr.storage_condition_code
+    LEFT JOIN dim_timepoint tp ON tp.timepoint_code = sr.time_point_code
+    LEFT JOIN dim_instrument di ON di.instrument_id = sr.instrument_id_vendor
+    LEFT JOIN dim_uom u ON u.uom_code = sr.uom_code
 ) AS src
 ON tgt.analytical_result_key = src.analytical_result_key
 WHEN MATCHED THEN UPDATE SET *

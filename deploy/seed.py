@@ -1,8 +1,10 @@
 """
 seed.py — Run sample data and validation queries against Databricks
 ====================================================================
-Executes sample_data/seed_e2e_sample.sql:
+Executes sample_data/seed_e2e_sample.sql, sample_data/populate_l3.sql,
+and sample_data/populate_dspec.sql:
   - INSERT statements load E2E sample data across all layers
+  - dspec_specification is populated from the L2.2 star schema
   - SELECT statements run validation queries and print results
 
 Usage:
@@ -24,7 +26,11 @@ DATABRICKS_TOKEN     = _cfg.get("DATABRICKS_TOKEN", "")
 DATABRICKS_HTTP_PATH = _cfg.get("DATABRICKS_HTTP_PATH", "")
 DATABRICKS_CATALOG   = _cfg.get("DATABRICKS_CATALOG", "pharma_quality")
 
-SEED_FILE = PROJECT_ROOT / "sample_data" / "seed_e2e_sample.sql"
+SEED_FILES = [
+    PROJECT_ROOT / "sample_data" / "seed_e2e_sample.sql",
+    PROJECT_ROOT / "sample_data" / "populate_l3.sql",
+    PROJECT_ROOT / "sample_data" / "populate_dspec.sql",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -115,17 +121,26 @@ def main():
     print("  Pharma Quality — E2E Sample Data Seed")
     print("=" * 65)
     print(f"  Catalog      : {DATABRICKS_CATALOG}")
-    print(f"  Seed file    : {SEED_FILE.name}")
+    print("  Seed files   :")
+    for seed_file in SEED_FILES:
+        print(f"    - {seed_file.name}")
     print(f"  Validate only: {args.validate_only}")
     print(f"  Dry run      : {args.dry_run}")
     print("=" * 65)
 
-    if not SEED_FILE.exists():
-        print(f"ERROR: Seed file not found: {SEED_FILE}")
+    missing_files = [f for f in SEED_FILES if not f.exists()]
+    if missing_files:
+        print("ERROR: Seed file(s) not found:")
+        for missing in missing_files:
+            print(f"  - {missing}")
         sys.exit(1)
 
-    statements = split_sql_statements(SEED_FILE.read_text(encoding="utf-8"))
-    print(f"\n  Parsed {len(statements)} SQL statement(s) from seed file.\n")
+    statements = []
+    for seed_file in SEED_FILES:
+        file_statements = split_sql_statements(seed_file.read_text(encoding="utf-8"))
+        statements.extend(file_statements)
+        print(f"  Parsed {len(file_statements)} SQL statement(s) from {seed_file.name}.")
+    print(f"\n  Parsed {len(statements)} SQL statement(s) total.\n")
 
     if args.dry_run:
         for i, stmt in enumerate(statements, 1):
