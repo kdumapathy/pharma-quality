@@ -454,7 +454,7 @@ USING (
         src.spec_item_id,
         ds.spec_key,
         dtm.test_method_key,
-        du.uom_key,
+        COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
         src.test_code,
         src.test_name,
         src.test_description,
@@ -478,6 +478,7 @@ USING (
     LEFT JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
     LEFT JOIN dim_test_method dtm ON dtm.test_method_id = src.test_method_id
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
+    LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
 ON tgt.spec_item_id = src.spec_item_id
 WHEN MATCHED THEN UPDATE SET
@@ -631,7 +632,7 @@ USING (
         ds.spec_key,
         dsi.spec_item_key,
         dlt.limit_type_key,
-        du.uom_key,
+        COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
         src.effective_date,
         src.effective_end_date,
         src.lower_limit_value,
@@ -659,6 +660,7 @@ USING (
     JOIN dim_specification_item dsi ON dsi.spec_item_id = src.source_spec_item_id
     JOIN dim_limit_type dlt ON dlt.limit_type_code = src.limit_type_code
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
+    LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
 ON tgt.source_system_code = src.source_system_code
 AND tgt.source_system_id = src.source_system_id
