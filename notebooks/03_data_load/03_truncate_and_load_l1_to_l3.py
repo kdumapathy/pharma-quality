@@ -46,6 +46,35 @@ def _workspace_path() -> Path:
         return Path(__file__).resolve().parent
 
 
+def _find_notebook_dir(*, files_in_order: list[str]) -> Path:
+    """Resolve a SQL notebook directory that actually contains expected files."""
+    candidates: list[Path] = [
+        _workspace_path(),
+        Path(__file__).resolve().parent,
+        Path.cwd() / "notebooks" / "03_data_load",
+    ]
+
+    # Search upward from current working directory for a repo-like notebooks folder.
+    for parent in [Path.cwd(), *Path.cwd().parents]:
+        candidates.append(parent / "notebooks" / "03_data_load")
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+
+        if all((resolved / file_name).exists() for file_name in files_in_order):
+            return resolved
+
+    searched = "\n".join(f" - {path.resolve()}" for path in candidates)
+    raise FileNotFoundError(
+        "Unable to locate SQL notebook directory containing required files. "
+        f"Looked for: {files_in_order}\nSearched:\n{searched}"
+    )
+
+
 def _execute_sql(statements: Iterable[str], *, dry_run: bool = False) -> None:
     for stmt in statements:
         clean_stmt = stmt.strip()
@@ -160,7 +189,7 @@ def run_sql_notebooks(*, notebook_dir: Path, files_in_order: list[str], dry_run:
 
 # COMMAND ----------
 
-base_dir = _workspace_path()
+base_dir = _find_notebook_dir(files_in_order=SQL_NOTEBOOKS_IN_ORDER)
 print(f"Resolved SQL notebook directory: {base_dir}")
 
 truncate_curated_targets(catalog=CATALOG, schemas=TARGET_SCHEMAS, dry_run=DRY_RUN)
