@@ -333,7 +333,6 @@ SELECT
     i.test_category_name,
     i.criticality AS criticality_code,
     tm.test_method_name                 AS method_name,
-    tm.analytical_technique             AS technique,
     f.stability_study_id,
     sc.condition_code                   AS storage_condition_code,
     sc.condition_name                   AS storage_condition_name,
