@@ -98,7 +98,7 @@ SELECT
     mk.country_name AS market_country_name,
     mk.market_status,
     s.compendia_reference,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
     i.test_category_name,
@@ -176,7 +176,7 @@ SELECT
     m.material_name,
     p.dosage_form_name,
     p.strength,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_category_code,
     i.sequence_number,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.lower_limit_value END) AS ac_lower_limit,
@@ -240,7 +240,8 @@ WHERE f.is_current = TRUE
 GROUP BY
     s.spec_number, s.spec_version, s.spec_type_code, s.stage_code,
     p.product_name, m.material_name, p.dosage_form_name, p.strength,
-    i.test_name, i.test_category_code,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'),
+    i.test_category_code,
     i.sequence_number
 ;
 
@@ -327,7 +328,7 @@ SELECT
     s.spec_number,
     s.spec_version,
     s.spec_type_code,
-    i.test_name,
+    COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
     i.test_category_name,
