@@ -235,7 +235,7 @@ LEFT JOIN l2_2_spec_unified.dim_product p        ON s.product_key = p.product_ke
 LEFT JOIN l2_2_spec_unified.dim_material m       ON s.material_key = m.material_key
 LEFT JOIN l2_2_spec_unified.dim_uom u            ON i.uom_key = u.uom_key
 WHERE f.is_current = TRUE
-  AND f.stage_code = 'RELEASE'
+  AND COALESCE(UPPER(TRIM(f.stage_code)), 'RELEASE') IN ('RELEASE', 'BOTH')
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
 GROUP BY
     s.spec_number, s.spec_version, s.spec_type_code, s.stage_code,
