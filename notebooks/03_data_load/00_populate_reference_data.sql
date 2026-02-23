@@ -34,36 +34,44 @@ DELETE FROM dim_timepoint;
 
 -- DBTITLE 1,Cell 5
 CREATE OR REPLACE TEMP VIEW tmp_dim_uom_seed AS
-SELECT *
-FROM VALUES
-    ('mg',       'Milligrams',                  'MASS',          CAST(0.001 AS DECIMAL(18,10)),          'kg'),
-    ('g',        'Grams',                       'MASS',          CAST(1.0 AS DECIMAL(18,10)),            'kg'),
-    ('mcg',      'Micrograms',                  'MASS',          CAST(0.000001 AS DECIMAL(18,10)),       'kg'),
-    ('%',        'Percent',                     'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('% w/w',    'Percent weight/weight',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('% w/v',    'Percent weight/volume',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('% area',   'Percent area (HPLC)',         'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('ppm',      'Parts per million',           'CONCENTRATION', CAST(0.000001 AS DECIMAL(18,10)),       CAST(NULL AS STRING)),
-    ('ppb',      'Parts per billion',           'CONCENTRATION', CAST(0.000000001 AS DECIMAL(18,10)),    CAST(NULL AS STRING)),
-    ('mg/mL',    'Milligrams per milliliter',   'CONCENTRATION', CAST(1.0 AS DECIMAL(18,10)),            'kg/m3'),
-    ('mg/g',     'Milligrams per gram',         'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          CAST(NULL AS STRING)),
-    ('mcg/mL',   'Micrograms per milliliter',   'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          'kg/m3'),
-    ('IU',       'International Units',         'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('IU/mg',    'International Units per mg',  'CONCENTRATION', CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('CFU/g',    'Colony forming units per g',  'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('CFU/mL',   'Colony forming units per mL', 'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('EU/mg',    'Endotoxin units per mg',      'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('mL',       'Milliliters',                 'VOLUME',        CAST(0.000001 AS DECIMAL(18,10)),       'm3'),
-    ('L',        'Liters',                      'VOLUME',        CAST(0.001 AS DECIMAL(18,10)),          'm3'),
-    ('mm',       'Millimeters',                 'LENGTH',        CAST(0.001 AS DECIMAL(18,10)),          'm'),
-    ('min',      'Minutes',                     'OTHER',         CAST(60.0 AS DECIMAL(18,10)),           's'),
-    ('pH',       'pH units',                    'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('N/A',      'Not applicable',              'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
-    ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-    ('% (Q)',    'Percent dissolved (Q value)', 'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
-AS seed(uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit);
-
+SELECT
+  ROW_NUMBER() OVER (ORDER BY uom_code) AS uom_key,
+  uom_code,
+  uom_name,
+  uom_category,
+  si_conversion_factor,
+  si_base_unit
+FROM (
+  SELECT *
+  FROM VALUES
+      ('mg',       'Milligrams',                  'MASS',          CAST(0.001 AS DECIMAL(18,10)),          'kg'),
+      ('g',        'Grams',                       'MASS',          CAST(1.0 AS DECIMAL(18,10)),            'kg'),
+      ('mcg',      'Micrograms',                  'MASS',          CAST(0.000001 AS DECIMAL(18,10)),       'kg'),
+      ('%',        'Percent',                     'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('% w/w',    'Percent weight/weight',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('% w/v',    'Percent weight/volume',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('% area',   'Percent area (HPLC)',         'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('ppm',      'Parts per million',           'CONCENTRATION', CAST(0.000001 AS DECIMAL(18,10)),       CAST(NULL AS STRING)),
+      ('ppb',      'Parts per billion',           'CONCENTRATION', CAST(0.000000001 AS DECIMAL(18,10)),    CAST(NULL AS STRING)),
+      ('mg/mL',    'Milligrams per milliliter',   'CONCENTRATION', CAST(1.0 AS DECIMAL(18,10)),            'kg/m3'),
+      ('mg/g',     'Milligrams per gram',         'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          CAST(NULL AS STRING)),
+      ('mcg/mL',   'Micrograms per milliliter',   'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          'kg/m3'),
+      ('IU',       'International Units',         'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('IU/mg',    'International Units per mg',  'CONCENTRATION', CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('CFU/g',    'Colony forming units per g',  'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('CFU/mL',   'Colony forming units per mL', 'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('EU/mg',    'Endotoxin units per mg',      'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('mL',       'Milliliters',                 'VOLUME',        CAST(0.000001 AS DECIMAL(18,10)),       'm3'),
+      ('L',        'Liters',                      'VOLUME',        CAST(0.001 AS DECIMAL(18,10)),          'm3'),
+      ('mm',       'Millimeters',                 'LENGTH',        CAST(0.001 AS DECIMAL(18,10)),          'm'),
+      ('min',      'Minutes',                     'OTHER',         CAST(60.0 AS DECIMAL(18,10)),           's'),
+      ('pH',       'pH units',                    'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('N/A',      'Not applicable',              'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
+      ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+      ('% (Q)',    'Percent dissolved (Q value)', 'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
+  AS seed(uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit)
+);
 
 MERGE INTO dim_uom AS tgt
 USING tmp_dim_uom_seed src
@@ -74,8 +82,8 @@ WHEN MATCHED THEN UPDATE SET
   tgt.si_conversion_factor = src.si_conversion_factor,
   tgt.si_base_unit = src.si_base_unit,
   tgt.is_active = TRUE
-WHEN NOT MATCHED THEN INSERT (uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit, is_active)
-VALUES (src.uom_code, src.uom_name, src.uom_category, src.si_conversion_factor, src.si_base_unit, TRUE);
+WHEN NOT MATCHED THEN INSERT (uom_key, uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit, is_active)
+VALUES (src.uom_key, src.uom_code, src.uom_name, src.uom_category, src.si_conversion_factor, src.si_base_unit, TRUE);
 
 -- COMMAND ----------
 
