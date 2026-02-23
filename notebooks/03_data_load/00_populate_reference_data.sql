@@ -35,7 +35,13 @@ DELETE FROM dim_timepoint;
 -- DBTITLE 1,Cell 5
 MERGE INTO dim_uom AS tgt
 USING (
-    VALUES
+    SELECT
+        col1 AS uom_code,
+        col2 AS uom_name,
+        col3 AS uom_category,
+        col4 AS si_conversion_factor,
+        col5 AS si_base_unit
+    FROM VALUES
         ('mg',       'Milligrams',                  'MASS',          CAST(0.001 AS DECIMAL(18,10)),          'kg'),
         ('g',        'Grams',                       'MASS',          CAST(1.0 AS DECIMAL(18,10)),            'kg'),
         ('mcg',      'Micrograms',                  'MASS',          CAST(0.000001 AS DECIMAL(18,10)),       'kg'),
@@ -62,7 +68,7 @@ USING (
         ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
         ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
         ('% (Q)',    'Percent dissolved (Q value)',  'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
-) src (uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit)
+) src
 ON tgt.uom_code = src.uom_code
 WHEN MATCHED THEN UPDATE SET
   tgt.uom_name = src.uom_name,
