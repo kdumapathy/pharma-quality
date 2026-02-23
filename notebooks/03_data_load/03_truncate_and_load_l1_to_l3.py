@@ -36,6 +36,14 @@ TARGET_SCHEMAS = [
 # COMMAND ----------
 
 
+def _script_dir() -> Path:
+    """Resolve this script directory when __file__ is unavailable (e.g., notebooks)."""
+    script_file = globals().get("__file__")
+    if script_file:
+        return Path(script_file).resolve().parent
+    return Path.cwd()
+
+
 def _workspace_path() -> Path:
     """Best-effort resolve of current notebook folder in Databricks."""
     try:
@@ -43,14 +51,14 @@ def _workspace_path() -> Path:
         return Path("/Workspace") / Path(notebook_path).parent
     except Exception:
         # Local/CI fallback: relative to repository file location.
-        return Path(__file__).resolve().parent
+        return _script_dir()
 
 
 def _find_notebook_dir(*, files_in_order: list[str]) -> Path:
     """Resolve a SQL notebook directory that actually contains expected files."""
     candidates: list[Path] = [
         _workspace_path(),
-        Path(__file__).resolve().parent,
+        _script_dir(),
         Path.cwd() / "notebooks" / "03_data_load",
     ]
 
