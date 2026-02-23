@@ -29,11 +29,8 @@ DRY_RUN = False
 # Curated schemas to truncate prior to full reload.
 TARGET_SCHEMAS = [
     "l2_1_lims",
-    "l2_1_pdf",
-    "l2_1_mes",
-    "l2_1_vendor",
-    "l2_2_unified",
-    "l3_final",
+    "l2_2_spec_unified",
+    "l3_spec_products",
 ]
 
 # COMMAND ----------
@@ -60,6 +57,35 @@ def _execute_sql(statements: Iterable[str], *, dry_run: bool = False) -> None:
             spark.sql(clean_stmt)  # type: ignore[name-defined]
 
 
+def _split_sql_statements(sql_block: str) -> list[str]:
+    """Split a SQL block into individual statements by semicolon delimiters."""
+    statements: list[str] = []
+    current: list[str] = []
+    in_single_quote = False
+    in_double_quote = False
+
+    for char in sql_block:
+        if char == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+        elif char == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+
+        if char == ";" and not in_single_quote and not in_double_quote:
+            statement = "".join(current).strip()
+            if statement:
+                statements.append(statement)
+            current.clear()
+            continue
+
+        current.append(char)
+
+    trailing_statement = "".join(current).strip()
+    if trailing_statement:
+        statements.append(trailing_statement)
+
+    return statements
+
+
 def _extract_sql_statements(sql_text: str) -> list[str]:
     """
     Parse Databricks-exported SQL notebook text into executable SQL statements.
@@ -75,7 +101,7 @@ def _extract_sql_statements(sql_text: str) -> list[str]:
     def flush() -> None:
         joined = "\n".join(buffer).strip()
         if joined:
-            statements.append(joined)
+            statements.extend(_split_sql_statements(joined))
         buffer.clear()
 
     for raw_line in sql_text.splitlines():
