@@ -25,28 +25,21 @@ USE SCHEMA l2_2_unified_model;
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 5
+-- DBTITLE 1,dim_product MERGE (fixed)
 MERGE INTO dim_product AS tgt
 USING (
     SELECT DISTINCT
         FIRST_VALUE(product_id) OVER (PARTITION BY product_key ORDER BY src_priority) AS product_id,
-        CAST(NULL AS STRING) AS product_code,
         FIRST_VALUE(product_name) OVER (PARTITION BY product_key ORDER BY src_priority) AS product_name,
-        CAST(NULL AS STRING) AS inn_name,
+        HASH(FIRST_VALUE(product_id) OVER (PARTITION BY product_key ORDER BY src_priority)) AS product_key,
+        CAST(NULL AS STRING) AS product_family,
         CAST(NULL AS STRING) AS brand_name,
-        CAST(NULL AS STRING) AS dosage_form_code,
-        CAST(NULL AS STRING) AS dosage_form_name,
+        CAST(NULL AS STRING) AS dosage_form,
         CAST(NULL AS STRING) AS route_of_administration,
-        CAST(NULL AS STRING) AS strength,
-        CAST(NULL AS DECIMAL(12,4)) AS strength_value,
-        CAST(NULL AS STRING) AS strength_uom,
         CAST(NULL AS STRING) AS therapeutic_area,
-        CAST(NULL AS STRING) AS atc_code,
-        CAST(NULL AS STRING) AS nda_number,
-        CAST(NULL AS STRING) AS product_status,
-        CAST('MDM' AS STRING) AS source_system_code,
+        CAST(NULL AS STRING) AS strength,
         CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current
+        TRUE AS is_active
     FROM (
         SELECT HASH(s.product_id_lims) AS product_key, s.product_id_lims AS product_id,
             s.product_name, s.dosage_form, s.strength, s.effective_start_date AS effective_from, 1 AS src_priority
@@ -63,10 +56,10 @@ WHEN MATCHED THEN UPDATE SET
     strength = src.strength,
     load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    product_id, product_code, product_name, inn_name, brand_name, dosage_form_code, dosage_form_name, route_of_administration, strength, strength_value, strength_uom, therapeutic_area, atc_code, nda_number, product_status, source_system_code, load_timestamp, is_current
+    product_key, product_id, product_name, product_family, brand_name, dosage_form, route_of_administration, therapeutic_area, strength, load_timestamp, is_active
 )
 VALUES (
-    src.product_id, src.product_code, src.product_name, src.inn_name, src.brand_name, src.dosage_form_code, src.dosage_form_name, src.route_of_administration, src.strength, src.strength_value, src.strength_uom, src.therapeutic_area, src.atc_code, src.nda_number, src.product_status, src.source_system_code, src.load_timestamp, src.is_current
+    src.product_key, src.product_id, src.product_name, src.product_family, src.brand_name, src.dosage_form, src.route_of_administration, src.therapeutic_area, src.strength, src.load_timestamp, src.is_active
 );
 
 -- COMMAND ----------
@@ -76,25 +69,20 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 7
+-- DBTITLE 1,Cell 7 (fixed)
 MERGE INTO dim_material AS tgt
 USING (
     SELECT DISTINCT
         FIRST_VALUE(material_id) OVER (PARTITION BY material_key ORDER BY src_priority) AS material_id,
-        CAST(NULL AS STRING) AS material_code,
         FIRST_VALUE(material_name) OVER (PARTITION BY material_key ORDER BY src_priority) AS material_name,
-        CAST(NULL AS STRING) AS material_type_code,
-        CAST(NULL AS STRING) AS material_type_name,
+        HASH(FIRST_VALUE(material_id) OVER (PARTITION BY material_key ORDER BY src_priority)) AS material_key,
+        CAST(NULL AS STRING) AS material_type,
         CAST(NULL AS STRING) AS cas_number,
-        CAST(NULL AS STRING) AS molecular_formula,
-        CAST(NULL AS DECIMAL(10,4)) AS molecular_weight,
-        CAST(NULL AS STRING) AS structural_formula,
-        CAST(NULL AS STRING) AS pharmacopoeia_grade,
-        CAST(NULL AS STRING) AS manufacturer_name,
-        CAST(NULL AS STRING) AS manufacturer_code,
-        CAST('LIMS' AS STRING) AS source_system_code,
-        CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current
+        CAST(NULL AS STRING) AS inn_name,
+        CAST(NULL AS STRING) AS compendial_name,
+        CAST(NULL AS STRING) AS grade,
+        TRUE AS is_active,
+        CURRENT_TIMESTAMP() AS load_timestamp
     FROM (
         SELECT HASH(s.material_id_lims) AS material_key, s.material_id_lims AS material_id,
             s.material_name, s.effective_start_date AS effective_from, 1 AS src_priority
@@ -109,10 +97,10 @@ ON tgt.material_id = src.material_id
 WHEN MATCHED THEN UPDATE SET
     material_name = src.material_name, load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    material_id, material_code, material_name, material_type_code, material_type_name, cas_number, molecular_formula, molecular_weight, structural_formula, pharmacopoeia_grade, manufacturer_name, manufacturer_code, source_system_code, load_timestamp, is_current
+    material_key, material_id, material_name, material_type, cas_number, inn_name, compendial_name, grade, is_active, load_timestamp
 )
 VALUES (
-    src.material_id, src.material_code, src.material_name, src.material_type_code, src.material_type_name, src.cas_number, src.molecular_formula, src.molecular_weight, src.structural_formula, src.pharmacopoeia_grade, src.manufacturer_name, src.manufacturer_code, src.source_system_code, src.load_timestamp, src.is_current
+    src.material_key, src.material_id, src.material_name, src.material_type, src.cas_number, src.inn_name, src.compendial_name, src.grade, src.is_active, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -122,49 +110,35 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 9
+-- DBTITLE 1,Cell 9 (fixed)
 MERGE INTO dim_test_method AS tgt
 USING (
     SELECT DISTINCT
         i.test_method_id_lims               AS test_method_id,
-        CAST(NULL AS STRING)                AS test_method_number,
-        COALESCE(i.compendia_test_ref, i.test_name) AS test_method_name,
-        CAST(NULL AS STRING)                AS test_method_version,
-        CAST(NULL AS STRING)                AS method_type_code,
-        CAST(NULL AS STRING)                AS method_type_name,
-        CAST(NULL AS STRING)                AS analytical_technique,
-        CAST(NULL AS STRING)                AS instrument_type,
+        HASH(i.test_method_id_lims)         AS test_method_key,
+        COALESCE(i.compendia_test_ref, i.test_name) AS method_name,
+        CAST(NULL AS STRING)                AS method_number,
+        CAST(NULL AS STRING)                AS method_version,
+        CAST(NULL AS STRING)                AS method_type,
+        CAST(NULL AS STRING)                AS technique,
         i.compendia_test_ref                AS compendia_reference,
-        CAST(NULL AS STRING)                AS validation_status,
-        CAST(NULL AS DATE)                  AS validation_date,
-        CAST('LIMS' AS STRING)              AS source_system_code,
-        CAST(NULL AS STRING)                AS source_system_id,
-        CURRENT_TIMESTAMP()                 AS load_timestamp,
-        TRUE                                AS is_current
+        TRUE                                AS is_validated,
+        TRUE                                AS is_active,
+        CURRENT_DATE()                      AS effective_from,
+        NULL                                AS effective_to,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_lims_spec_item i
     WHERE i.is_current = TRUE AND i.test_method_id_lims IS NOT NULL
 ) AS src
 ON tgt.test_method_id = src.test_method_id
 WHEN MATCHED THEN UPDATE SET
-    test_method_number = src.test_method_number,
-    test_method_name = src.test_method_name,
-    test_method_version = src.test_method_version,
-    method_type_code = src.method_type_code,
-    method_type_name = src.method_type_name,
-    analytical_technique = src.analytical_technique,
-    instrument_type = src.instrument_type,
-    compendia_reference = src.compendia_reference,
-    validation_status = src.validation_status,
-    validation_date = src.validation_date,
-    source_system_code = src.source_system_code,
-    source_system_id = src.source_system_id,
-    load_timestamp = src.load_timestamp,
-    is_current = src.is_current
+    method_name = src.method_name,
+    load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    test_method_id, test_method_number, test_method_name, test_method_version, method_type_code, method_type_name, analytical_technique, instrument_type, compendia_reference, validation_status, validation_date, source_system_code, source_system_id, load_timestamp, is_current
+    test_method_key, test_method_id, method_name, method_number, method_version, method_type, technique, compendia_reference, is_validated, is_active, effective_from, effective_to, load_timestamp
 )
 VALUES (
-    src.test_method_id, src.test_method_number, src.test_method_name, src.test_method_version, src.method_type_code, src.method_type_name, src.analytical_technique, src.instrument_type, src.compendia_reference, src.validation_status, src.validation_date, src.source_system_code, src.source_system_id, src.load_timestamp, src.is_current
+    src.test_method_key, src.test_method_id, src.method_name, src.method_number, src.method_version, src.method_type, src.technique, src.compendia_reference, src.is_validated, src.is_active, src.effective_from, src.effective_to, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -174,28 +148,20 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 11
+-- DBTITLE 1,Cell 11 (fixed)
 MERGE INTO dim_site AS tgt
 USING (
     SELECT DISTINCT
         s.site_id_lims                      AS site_id,
+        HASH(s.site_id_lims)                AS site_key,
         s.site_id_lims                      AS site_code,
         s.site_name,
         CAST(NULL AS STRING)                AS site_type,
-        CAST(NULL AS STRING)                AS address_line,
-        CAST(NULL AS STRING)                AS city,
-        CAST(NULL AS STRING)                AS state_province,
         CAST(NULL AS STRING)                AS country_code,
         CAST(NULL AS STRING)                AS country_name,
-        CAST(NULL AS STRING)                AS regulatory_region,
-        CAST(NULL AS STRING)                AS gmp_status,
-        CAST(NULL AS DATE)                  AS gmp_status_date,
-        CAST(NULL AS DATE)                  AS last_inspection_date,
-        CAST(NULL AS STRING)                AS last_inspection_outcome,
-        CAST('LIMS' AS STRING)              AS source_system_code,
-        CAST(NULL AS STRING)                AS source_system_id,
-        CURRENT_TIMESTAMP()                 AS load_timestamp,
-        TRUE                                AS is_current
+        CAST(NULL AS STRING)                AS region_code,
+        TRUE                                AS is_active,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE AND s.site_id_lims IS NOT NULL
 ) AS src
@@ -204,10 +170,10 @@ WHEN MATCHED THEN UPDATE SET
     site_name = src.site_name,
     load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    site_id, site_code, site_name, site_type, address_line, city, state_province, country_code, country_name, regulatory_region, gmp_status, gmp_status_date, last_inspection_date, last_inspection_outcome, source_system_code, source_system_id, load_timestamp, is_current
+    site_key, site_id, site_name, site_type, country_code, country_name, region_code, is_active, load_timestamp
 )
 VALUES (
-    src.site_id, src.site_code, src.site_name, src.site_type, src.address_line, src.city, src.state_province, src.country_code, src.country_name, src.regulatory_region, src.gmp_status, src.gmp_status_date, src.last_inspection_date, src.last_inspection_outcome, src.source_system_code, src.source_system_id, src.load_timestamp, src.is_current
+    src.site_key, src.site_id, src.site_name, src.site_type, src.country_code, src.country_name, src.region_code, src.is_active, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -217,49 +183,34 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 13
+-- DBTITLE 1,Cell 13 (fixed)
 MERGE INTO dim_market AS tgt
 USING (
     SELECT DISTINCT
-        s.market_region                     AS market_id,
-        s.market_region                     AS country_code,
-        s.market_region                     AS country_name,
+        s.market_region                     AS market_code,
+        s.market_region                     AS market_name,
         s.market_region                     AS region_code,
         s.market_region                     AS region_name,
-        CAST(NULL AS STRING)                AS regulatory_body,
-        CAST(NULL AS STRING)                AS market_status,
-        CAST(NULL AS STRING)                AS marketing_auth_number,
-        CAST(NULL AS DATE)                  AS marketing_auth_date,
-        CAST(NULL AS DATE)                  AS marketing_auth_expiry_date,
-        CAST(NULL AS STRING)                AS primary_pharmacopoeia,
-        CAST('LIMS' AS STRING)              AS source_system_code,
-        CAST(NULL AS STRING)                AS source_system_id,
+        CAST(NULL AS STRING)                AS regulatory_authority,
+        TRUE                                AS is_active,
         CURRENT_TIMESTAMP()                 AS load_timestamp,
-        TRUE                                AS is_current
+        HASH(s.market_region)               AS market_key
     FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE AND s.market_region IS NOT NULL
 ) AS src
-ON tgt.market_id = src.market_id
+ON tgt.market_code = src.market_code
 WHEN MATCHED THEN UPDATE SET
-    country_code = src.country_code,
-    country_name = src.country_name,
+    market_name = src.market_name,
     region_code = src.region_code,
     region_name = src.region_name,
-    regulatory_body = src.regulatory_body,
-    market_status = src.market_status,
-    marketing_auth_number = src.marketing_auth_number,
-    marketing_auth_date = src.marketing_auth_date,
-    marketing_auth_expiry_date = src.marketing_auth_expiry_date,
-    primary_pharmacopoeia = src.primary_pharmacopoeia,
-    source_system_code = src.source_system_code,
-    source_system_id = src.source_system_id,
-    load_timestamp = src.load_timestamp,
-    is_current = src.is_current
+    regulatory_authority = src.regulatory_authority,
+    is_active = src.is_active,
+    load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    market_id, country_code, country_name, region_code, region_name, regulatory_body, market_status, marketing_auth_number, marketing_auth_date, marketing_auth_expiry_date, primary_pharmacopoeia, source_system_code, source_system_id, load_timestamp, is_current
+    market_key, market_code, market_name, region_code, region_name, regulatory_authority, is_active, load_timestamp
 )
 VALUES (
-    src.market_id, src.country_code, src.country_name, src.region_code, src.region_name, src.regulatory_body, src.market_status, src.marketing_auth_number, src.marketing_auth_date, src.marketing_auth_expiry_date, src.primary_pharmacopoeia, src.source_system_code, src.source_system_id, src.load_timestamp, src.is_current
+    src.market_key, src.market_code, src.market_name, src.region_code, src.region_name, src.regulatory_authority, src.is_active, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -269,99 +220,73 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 15
+-- DBTITLE 1,Cell 15 (fixed)
 MERGE INTO dim_specification AS tgt
 USING (
     WITH src_specs AS (
-    -- From LIMS
-    SELECT
-        s.source_specification_id           AS spec_id,
-        s.spec_number, s.spec_version, s.spec_title, s.spec_type_code, s.spec_type_name,
-        s.product_id_lims AS product_id,
-        s.material_id_lims AS material_id,
-        s.site_id_lims AS site_id,
-        s.market_region AS market_id,
-        CAST(NULL AS BIGINT) AS regulatory_context_key,
-        s.ctd_section,
-        s.stage_code, CAST(NULL AS STRING) AS stage_name,
-        s.status_code, s.status_name,
-        s.effective_start_date, s.effective_end_date, s.approval_date,
-        s.approved_by AS approver_name, CAST(NULL AS STRING) AS approver_title,
-        s.compendia_reference,
-        s.supersedes_spec_id,
-        CAST('LIMS' AS STRING) AS source_system_code,
-        s.source_specification_id AS source_system_id,
-        CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
-        CAST(NULL AS TIMESTAMP) AS valid_to
-    FROM l2_1_scl.src_lims_specification s
-    WHERE s.is_current = TRUE
+        -- From LIMS
+        SELECT
+            s.source_specification_id           AS source_specification_id,
+            s.spec_number, s.spec_version, s.spec_title, s.spec_type_code, s.spec_type_name,
+            dp.product_key,
+            dm.material_key,
+            ds.site_key,
+            dmk.market_key,
+            s.ctd_section,
+            s.stage_code,
+            s.status_code, s.status_name,
+            CAST(DATE_FORMAT(s.effective_start_date, 'yyyyMMdd') AS INT) AS effective_start_date_key,
+            CAST(DATE_FORMAT(s.effective_end_date, 'yyyyMMdd') AS INT) AS effective_end_date_key,
+            CAST(DATE_FORMAT(s.approval_date, 'yyyyMMdd') AS INT) AS approval_date_key,
+            s.approved_by AS approved_by,
+            s.compendia_reference,
+            CAST(NULL AS BIGINT) AS supersedes_spec_key,
+            CURRENT_TIMESTAMP() AS load_timestamp,
+            TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
+            CAST(NULL AS TIMESTAMP) AS valid_to
+        FROM l2_1_scl.src_lims_specification s
+        LEFT JOIN dim_product dp ON dp.product_id = s.product_id_lims
+        LEFT JOIN dim_material dm ON dm.material_id = s.material_id_lims
+        LEFT JOIN dim_site ds ON ds.site_id = s.site_id_lims
+        LEFT JOIN dim_market dmk ON dmk.market_code = s.market_region
+        WHERE s.is_current = TRUE
 
-    UNION ALL
+        UNION ALL
 
-    -- From PDF (distinct specs not already in LIMS)
-    SELECT
-        CONCAT('PDF:', p.source_document_id) AS spec_id,
-        p.spec_number, p.spec_version, p.spec_title, p.spec_type_code,
-        CAST(NULL AS STRING) AS spec_type_name,
-        p.product_id_pdf AS product_id,
-        p.material_id_pdf AS material_id,
-        CAST(NULL AS STRING) AS site_id,
-        p.market_region AS market_id,
-        CAST(NULL AS BIGINT) AS regulatory_context_key,
-        p.ctd_section,
-        p.stage_code, CAST(NULL AS STRING) AS stage_name,
-        'APP' AS status_code, 'Approved' AS status_name,
-        p.effective_date AS effective_start_date, CAST(NULL AS DATE) AS effective_end_date, p.approval_date,
-        p.approved_by AS approver_name, CAST(NULL AS STRING) AS approver_title,
-        p.compendia_reference,
-        CAST(NULL AS STRING) AS supersedes_spec_id,
-        CAST('PDF' AS STRING) AS source_system_code,
-        p.source_document_id AS source_system_id,
-        CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
-        CAST(NULL AS TIMESTAMP) AS valid_to
-    FROM l2_1_scl.src_pdf_specification p
-    WHERE p.is_current = TRUE
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number ORDER BY p.source_ingestion_timestamp DESC) = 1
+        -- From PDF (distinct specs not already in LIMS)
+        SELECT
+            CONCAT('PDF:', p.source_document_id) AS source_specification_id,
+            p.spec_number, p.spec_version, p.spec_title, p.spec_type_code,
+            CAST(NULL AS STRING) AS spec_type_name,
+            dp.product_key,
+            dm.material_key,
+            NULL AS site_key,
+            dmk.market_key,
+            p.ctd_section,
+            p.stage_code,
+            'APP' AS status_code, 'Approved' AS status_name,
+            CAST(DATE_FORMAT(p.effective_date, 'yyyyMMdd') AS INT) AS effective_start_date_key,
+            NULL AS effective_end_date_key,
+            CAST(DATE_FORMAT(p.approval_date, 'yyyyMMdd') AS INT) AS approval_date_key,
+            p.approved_by AS approved_by,
+            p.compendia_reference,
+            CAST(NULL AS BIGINT) AS supersedes_spec_key,
+            CURRENT_TIMESTAMP() AS load_timestamp,
+            TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
+            CAST(NULL AS TIMESTAMP) AS valid_to
+        FROM l2_1_scl.src_pdf_specification p
+        LEFT JOIN dim_product dp ON dp.product_id = p.product_id_pdf
+        LEFT JOIN dim_material dm ON dm.material_id = p.material_id_pdf
+        LEFT JOIN dim_market dmk ON dmk.market_code = p.market_region
+        WHERE p.is_current = TRUE
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number ORDER BY p.source_ingestion_timestamp DESC) = 1
     )
     SELECT
-        src.spec_id,
-        src.spec_number,
-        src.spec_version,
-        src.spec_title,
-        src.spec_type_code,
-        src.spec_type_name,
-        dp.product_key,
-        dm.material_key,
-        ds.site_key,
-        dmk.market_key,
-        src.regulatory_context_key,
-        src.ctd_section,
-        src.stage_code,
-        src.stage_name,
-        src.status_code,
-        src.status_name,
-        src.effective_start_date,
-        src.effective_end_date,
-        src.approval_date,
-        src.approver_name,
-        src.approver_title,
-        src.compendia_reference,
-        src.supersedes_spec_id,
-        src.source_system_code,
-        src.source_system_id,
-        src.load_timestamp,
-        src.is_current,
-        src.valid_from,
-        src.valid_to
-    FROM src_specs src
-    LEFT JOIN dim_product dp ON dp.product_id = src.product_id
-    LEFT JOIN dim_material dm ON dm.material_id = src.material_id
-    LEFT JOIN dim_site ds ON ds.site_id = src.site_id
-    LEFT JOIN dim_market dmk ON dmk.market_id = src.market_id
+        HASH(source_specification_id) AS spec_key,
+        *
+    FROM src_specs
 ) AS src
-ON tgt.spec_id = src.spec_id
+ON tgt.source_specification_id = src.source_specification_id
 WHEN MATCHED THEN UPDATE SET
     spec_number = src.spec_number,
     spec_version = src.spec_version,
@@ -372,30 +297,25 @@ WHEN MATCHED THEN UPDATE SET
     material_key = src.material_key,
     site_key = src.site_key,
     market_key = src.market_key,
-    regulatory_context_key = src.regulatory_context_key,
     ctd_section = src.ctd_section,
     stage_code = src.stage_code,
-    stage_name = src.stage_name,
     status_code = src.status_code,
     status_name = src.status_name,
-    effective_start_date = src.effective_start_date,
-    effective_end_date = src.effective_end_date,
-    approval_date = src.approval_date,
-    approver_name = src.approver_name,
-    approver_title = src.approver_title,
+    effective_start_date_key = src.effective_start_date_key,
+    effective_end_date_key = src.effective_end_date_key,
+    approval_date_key = src.approval_date_key,
+    approved_by = src.approved_by,
     compendia_reference = src.compendia_reference,
-    supersedes_spec_id = src.supersedes_spec_id,
-    source_system_code = src.source_system_code,
-    source_system_id = src.source_system_id,
+    supersedes_spec_key = src.supersedes_spec_key,
     load_timestamp = src.load_timestamp,
     is_current = src.is_current,
     valid_from = src.valid_from,
     valid_to = src.valid_to
 WHEN NOT MATCHED THEN INSERT (
-    spec_id, spec_number, spec_version, spec_title, spec_type_code, spec_type_name, product_key, material_key, site_key, market_key, regulatory_context_key, ctd_section, stage_code, stage_name, status_code, status_name, effective_start_date, effective_end_date, approval_date, approver_name, approver_title, compendia_reference, supersedes_spec_id, source_system_code, source_system_id, load_timestamp, is_current, valid_from, valid_to
+    spec_key, source_specification_id, spec_number, spec_version, spec_title, spec_type_code, spec_type_name, product_key, material_key, site_key, market_key, ctd_section, stage_code, status_code, status_name, effective_start_date_key, effective_end_date_key, approval_date_key, approved_by, compendia_reference, supersedes_spec_key, load_timestamp, is_current, valid_from, valid_to
 )
 VALUES (
-    src.spec_id, src.spec_number, src.spec_version, src.spec_title, src.spec_type_code, src.spec_type_name, src.product_key, src.material_key, src.site_key, src.market_key, src.regulatory_context_key, src.ctd_section, src.stage_code, src.stage_name, src.status_code, src.status_name, src.effective_start_date, src.effective_end_date, src.approval_date, src.approver_name, src.approver_title, src.compendia_reference, src.supersedes_spec_id, src.source_system_code, src.source_system_id, src.load_timestamp, src.is_current, src.valid_from, src.valid_to
+    src.spec_key, src.source_specification_id, src.spec_number, src.spec_version, src.spec_title, src.spec_type_code, src.spec_type_name, src.product_key, src.material_key, src.site_key, src.market_key, src.ctd_section, src.stage_code, src.status_code, src.status_name, src.effective_start_date_key, src.effective_end_date_key, src.approval_date_key, src.approved_by, src.compendia_reference, src.supersedes_spec_key, src.load_timestamp, src.is_current, src.valid_from, src.valid_to
 );
 
 -- COMMAND ----------
@@ -405,110 +325,117 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 17
+-- DBTITLE 1,Cell 17 (fixed)
 MERGE INTO dim_specification_item AS tgt
 USING (
     WITH src_items AS (
-    -- From LIMS
-    SELECT
-        i.source_spec_item_id               AS spec_item_id,
-        i.source_specification_id AS source_specification_id,
-        i.test_method_id_lims AS test_method_id,
-        i.uom_code,
-        i.test_code,
-        COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
-        CAST(NULL AS STRING) AS test_description,
-        i.test_category_code, i.test_category_name, i.test_subcategory,
-        i.analyte_code, i.criticality_code AS criticality, i.sequence_number, i.is_required, i.reporting_type, i.result_precision, i.compendia_test_ref,
-        CAST(NULL AS BOOLEAN) AS is_compendial, i.stage_applicability,
-        CAST('LIMS' AS STRING) AS source_system_code,
-        i.source_spec_item_id AS source_system_id,
-        CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current
-    FROM l2_1_scl.src_lims_spec_item i
-    WHERE i.is_current = TRUE
+        -- From LIMS
+        SELECT
+            i.source_spec_item_id               AS source_spec_item_id,
+            i.source_specification_id           AS source_specification_id,
+            i.test_method_id_lims               AS test_method_id,
+            i.uom_code,
+            i.test_code,
+            COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
+            i.analyte_code,
+            i.test_category_code, i.test_category_name, i.test_subcategory,
+            i.criticality_code,
+            i.sequence_number,
+            i.is_required,
+            i.reporting_type,
+            i.result_precision,
+            i.compendia_test_ref,
+            i.stage_applicability,
+            TRUE AS is_current,
+            CURRENT_TIMESTAMP() AS valid_from,
+            CAST(NULL AS TIMESTAMP) AS valid_to,
+            CURRENT_TIMESTAMP() AS load_timestamp
+        FROM l2_1_scl.src_lims_spec_item i
+        WHERE i.is_current = TRUE
 
-    UNION ALL
+        UNION ALL
 
-    -- From PDF (distinct test items per spec not already from LIMS)
-    SELECT
-        CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS spec_item_id,
-        CONCAT('PDF:', p.source_document_id) AS source_specification_id,
-        CAST(NULL AS STRING) AS test_method_id,
-        p.uom_code,
-        p.test_code,
-        COALESCE(NULLIF(TRIM(p.test_name), ''), NULLIF(TRIM(p.test_code), ''), 'UNKNOWN_TEST') AS test_name,
-        CAST(NULL AS STRING) AS test_description,
-        p.test_category_code, CAST(NULL AS STRING) AS test_category_name, CAST(NULL AS STRING) AS test_subcategory,
-        CAST(NULL AS STRING) AS analyte_code, p.criticality_code AS criticality, CAST(NULL AS INT) AS sequence_number, CAST(NULL AS BOOLEAN) AS is_required, 'TEXT' AS reporting_type, CAST(NULL AS INT) AS result_precision, p.test_method_reference AS compendia_test_ref,
-        CAST(NULL AS BOOLEAN) AS is_compendial, p.stage_code AS stage_applicability,
-        CAST('PDF' AS STRING) AS source_system_code,
-        CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS source_system_id,
-        CURRENT_TIMESTAMP() AS load_timestamp,
-        TRUE AS is_current
-    FROM l2_1_scl.src_pdf_specification p
-    WHERE p.is_current = TRUE
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number, p.test_code ORDER BY p.source_ingestion_timestamp DESC) = 1
+        -- From PDF (distinct test items per spec not already from LIMS)
+        SELECT
+            CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS source_spec_item_id,
+            CONCAT('PDF:', p.source_document_id) AS source_specification_id,
+            CAST(NULL AS STRING) AS test_method_id,
+            p.uom_code,
+            p.test_code,
+            COALESCE(NULLIF(TRIM(p.test_name), ''), NULLIF(TRIM(p.test_code), ''), 'UNKNOWN_TEST') AS test_name,
+            CAST(NULL AS STRING) AS analyte_code,
+            p.test_category_code, CAST(NULL AS STRING) AS test_category_name, CAST(NULL AS STRING) AS test_subcategory,
+            CAST(NULL AS STRING) AS criticality_code,
+            CAST(NULL AS INT) AS sequence_number,
+            CAST(NULL AS BOOLEAN) AS is_required,
+            'TEXT' AS reporting_type,
+            CAST(NULL AS INT) AS result_precision,
+            p.test_method_reference AS compendia_test_ref,
+            p.stage_code AS stage_applicability,
+            TRUE AS is_current,
+            CURRENT_TIMESTAMP() AS valid_from,
+            CAST(NULL AS TIMESTAMP) AS valid_to,
+            CURRENT_TIMESTAMP() AS load_timestamp
+        FROM l2_1_scl.src_pdf_specification p
+        WHERE p.is_current = TRUE
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number, p.test_code ORDER BY p.source_ingestion_timestamp DESC) = 1
     )
     SELECT
-        src.spec_item_id,
+        HASH(source_spec_item_id) AS spec_item_key,
+        src.source_spec_item_id,
         ds.spec_key,
         dtm.test_method_key,
         COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
         src.test_code,
         src.test_name,
-        src.test_description,
+        src.analyte_code,
         src.test_category_code,
         src.test_category_name,
         src.test_subcategory,
-        src.analyte_code,
-        src.criticality,
+        src.criticality_code,
         src.sequence_number,
         src.is_required,
         src.reporting_type,
         src.result_precision,
         src.compendia_test_ref,
-        src.is_compendial,
         src.stage_applicability,
-        src.source_system_code,
-        src.source_system_id,
-        src.load_timestamp,
-        src.is_current
+        src.is_current,
+        src.valid_from,
+        src.valid_to,
+        src.load_timestamp
     FROM src_items src
-    LEFT JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
+    LEFT JOIN dim_specification ds ON ds.source_specification_id = src.source_specification_id
     LEFT JOIN dim_test_method dtm ON dtm.test_method_id = src.test_method_id
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
     LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
-ON tgt.spec_item_id = src.spec_item_id
+ON tgt.source_spec_item_id = src.source_spec_item_id
 WHEN MATCHED THEN UPDATE SET
     spec_key = src.spec_key,
     test_method_key = src.test_method_key,
     uom_key = src.uom_key,
     test_code = src.test_code,
     test_name = src.test_name,
-    test_description = src.test_description,
+    analyte_code = src.analyte_code,
     test_category_code = src.test_category_code,
     test_category_name = src.test_category_name,
     test_subcategory = src.test_subcategory,
-    analyte_code = src.analyte_code,
-    criticality = src.criticality,
+    criticality_code = src.criticality_code,
     sequence_number = src.sequence_number,
     is_required = src.is_required,
     reporting_type = src.reporting_type,
     result_precision = src.result_precision,
     compendia_test_ref = src.compendia_test_ref,
-    is_compendial = src.is_compendial,
     stage_applicability = src.stage_applicability,
-    source_system_code = src.source_system_code,
-    source_system_id = src.source_system_id,
-    load_timestamp = src.load_timestamp,
-    is_current = src.is_current
+    is_current = src.is_current,
+    valid_from = src.valid_from,
+    valid_to = src.valid_to,
+    load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    spec_item_id, spec_key, test_method_key, uom_key, test_code, test_name, test_description, test_category_code, test_category_name, test_subcategory, analyte_code, criticality, sequence_number, is_required, reporting_type, result_precision, compendia_test_ref, is_compendial, stage_applicability, source_system_code, source_system_id, load_timestamp, is_current
+    spec_item_key, source_spec_item_id, spec_key, test_method_key, uom_key, test_code, test_name, analyte_code, test_category_code, test_category_name, test_subcategory, criticality_code, sequence_number, is_required, reporting_type, result_precision, compendia_test_ref, stage_applicability, is_current, valid_from, valid_to, load_timestamp
 )
 VALUES (
-    src.spec_item_id, src.spec_key, src.test_method_key, src.uom_key, src.test_code, src.test_name, src.test_description, src.test_category_code, src.test_category_name, src.test_subcategory, src.analyte_code, src.criticality, src.sequence_number, src.is_required, src.reporting_type, src.result_precision, src.compendia_test_ref, src.is_compendial, src.stage_applicability, src.source_system_code, src.source_system_id, src.load_timestamp, src.is_current
+    src.spec_item_key, src.source_spec_item_id, src.spec_key, src.test_method_key, src.uom_key, src.test_code, src.test_name, src.analyte_code, src.test_category_code, src.test_category_name, src.test_subcategory, src.criticality_code, src.sequence_number, src.is_required, src.reporting_type, src.result_precision, src.compendia_test_ref, src.stage_applicability, src.is_current, src.valid_from, src.valid_to, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -519,7 +446,7 @@ VALUES (
 
 -- COMMAND ----------
 
--- DBTITLE 1,Cell 19
+-- DBTITLE 1,Cell 19 (fixed)
 MERGE INTO fact_specification_limit AS tgt
 USING (
     WITH src_limits AS (
@@ -547,8 +474,7 @@ USING (
         CAST(l.last_calculated_date AS DATE) AS last_calculated_date,
         l.is_in_filing,
         l.regulatory_basis,
-        CAST('LIMS' AS STRING) AS source_system_code,
-        l.source_limit_id AS source_system_id,
+        l.source_limit_id AS source_limit_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_lims_spec_limit l
@@ -588,8 +514,7 @@ USING (
         CAST(r.last_calculated_date AS DATE) AS last_calculated_date,
         FALSE                               AS is_in_filing,
         CAST(NULL AS STRING)                AS regulatory_basis,
-        CAST('PROCESS_RECIPE' AS STRING) AS source_system_code,
-        r.source_recipe_id AS source_system_id,
+        r.source_recipe_id AS source_limit_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_process_recipe r
@@ -621,23 +546,24 @@ USING (
         CAST(NULL AS DATE)                  AS last_calculated_date,
         TRUE                                AS is_in_filing,
         p.regulatory_basis,
-        CAST('PDF' AS STRING) AS source_system_code,
-        p.source_row_key AS source_system_id,
+        p.source_row_key AS source_limit_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_pdf_specification p
     WHERE p.is_current = TRUE
     )
     SELECT
+        HASH(ds.spec_key, dsi.spec_item_key, dlt.limit_type_key, src.stage_code, src.source_limit_id) AS spec_limit_key,
         ds.spec_key,
         dsi.spec_item_key,
         dlt.limit_type_key,
         COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
-        src.effective_date,
-        src.effective_end_date,
+        CAST(DATE_FORMAT(src.effective_date, 'yyyyMMdd') AS INT) AS effective_start_date_key,
+        CAST(DATE_FORMAT(src.effective_end_date, 'yyyyMMdd') AS INT) AS effective_end_date_key,
         src.lower_limit_value,
         src.upper_limit_value,
         src.target_value,
+        (src.upper_limit_value - src.lower_limit_value) AS limit_range_width,
         src.lower_limit_operator,
         src.upper_limit_operator,
         src.limit_text,
@@ -648,54 +574,51 @@ USING (
         src.stability_condition,
         src.calculation_method,
         src.sample_size,
-        src.last_calculated_date,
+        CAST(DATE_FORMAT(src.last_calculated_date, 'yyyyMMdd') AS INT) AS last_calculated_date_key,
         src.is_in_filing,
         src.regulatory_basis,
-        src.source_system_code,
-        src.source_system_id,
+        src.source_limit_id,
         src.is_current,
         src.load_timestamp
     FROM src_limits src
-    JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
-    JOIN dim_specification_item dsi ON dsi.spec_item_id = src.source_spec_item_id
+    JOIN dim_specification ds ON ds.source_specification_id = src.source_specification_id
+    JOIN dim_specification_item dsi ON dsi.source_spec_item_id = src.source_spec_item_id
     JOIN dim_limit_type dlt ON dlt.limit_type_code = src.limit_type_code
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
     LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
-ON tgt.source_system_code = src.source_system_code
-AND tgt.source_system_id = src.source_system_id
+ON tgt.spec_key = src.spec_key
+AND tgt.spec_item_key = src.spec_item_key
+AND tgt.limit_type_key = src.limit_type_key
+AND tgt.stage_code = src.stage_code
+AND tgt.source_limit_id = src.source_limit_id
 WHEN MATCHED THEN UPDATE SET
-    spec_key = src.spec_key,
-    spec_item_key = src.spec_item_key,
-    limit_type_key = src.limit_type_key,
     uom_key = src.uom_key,
-    effective_date = src.effective_date,
-    effective_end_date = src.effective_end_date,
+    effective_start_date_key = src.effective_start_date_key,
+    effective_end_date_key = src.effective_end_date_key,
     lower_limit_value = src.lower_limit_value,
     upper_limit_value = src.upper_limit_value,
     target_value = src.target_value,
+    limit_range_width = src.limit_range_width,
     lower_limit_operator = src.lower_limit_operator,
     upper_limit_operator = src.upper_limit_operator,
     limit_text = src.limit_text,
     limit_description = src.limit_description,
     limit_basis = src.limit_basis,
-    stage_code = src.stage_code,
     stability_time_point = src.stability_time_point,
     stability_condition = src.stability_condition,
     calculation_method = src.calculation_method,
     sample_size = src.sample_size,
-    last_calculated_date = src.last_calculated_date,
+    last_calculated_date_key = src.last_calculated_date_key,
     is_in_filing = src.is_in_filing,
     regulatory_basis = src.regulatory_basis,
-    source_system_code = src.source_system_code,
-    source_system_id = src.source_system_id,
     is_current = src.is_current,
     load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (
-    spec_key, spec_item_key, limit_type_key, uom_key, effective_date, effective_end_date, lower_limit_value, upper_limit_value, target_value, lower_limit_operator, upper_limit_operator, limit_text, limit_description, limit_basis, stage_code, stability_time_point, stability_condition, calculation_method, sample_size, last_calculated_date, is_in_filing, regulatory_basis, source_system_code, source_system_id, is_current, load_timestamp
+    spec_limit_key, spec_key, spec_item_key, limit_type_key, uom_key, effective_start_date_key, effective_end_date_key, lower_limit_value, upper_limit_value, target_value, limit_range_width, lower_limit_operator, upper_limit_operator, limit_text, limit_description, limit_basis, stage_code, stability_time_point, stability_condition, calculation_method, sample_size, last_calculated_date_key, is_in_filing, regulatory_basis, source_limit_id, is_current, load_timestamp
 )
 VALUES (
-    src.spec_key, src.spec_item_key, src.limit_type_key, src.uom_key, src.effective_date, src.effective_end_date, src.lower_limit_value, src.upper_limit_value, src.target_value, src.lower_limit_operator, src.upper_limit_operator, src.limit_text, src.limit_description, src.limit_basis, src.stage_code, src.stability_time_point, src.stability_condition, src.calculation_method, src.sample_size, src.last_calculated_date, src.is_in_filing, src.regulatory_basis, src.source_system_code, src.source_system_id, src.is_current, src.load_timestamp
+    src.spec_limit_key, src.spec_key, src.spec_item_key, src.limit_type_key, src.uom_key, src.effective_start_date_key, src.effective_end_date_key, src.lower_limit_value, src.upper_limit_value, src.target_value, src.limit_range_width, src.lower_limit_operator, src.upper_limit_operator, src.limit_text, src.limit_description, src.limit_basis, src.stage_code, src.stability_time_point, src.stability_condition, src.calculation_method, src.sample_size, src.last_calculated_date_key, src.is_in_filing, src.regulatory_basis, src.source_limit_id, src.is_current, src.load_timestamp
 );
 
 -- COMMAND ----------
@@ -787,6 +710,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
+-- DBTITLE 1,Cell 25 (fixed)
 MERGE INTO fact_analytical_result AS tgt
 USING (
     WITH src_results AS (
@@ -868,8 +792,8 @@ USING (
         sr.load_timestamp
     FROM src_results sr
     LEFT JOIN dim_batch db ON db.batch_number = sr.batch_number
-    LEFT JOIN dim_specification ds ON ds.spec_id = sr.source_specification_id
-    LEFT JOIN dim_specification_item dsi ON dsi.spec_item_id = sr.source_spec_item_id
+    LEFT JOIN dim_specification ds ON ds.source_specification_id = sr.source_specification_id
+    LEFT JOIN dim_specification_item dsi ON dsi.source_spec_item_id = sr.source_spec_item_id
     LEFT JOIN dim_stability_condition sc ON sc.condition_code = sr.storage_condition_code
     LEFT JOIN dim_timepoint tp ON tp.timepoint_code = sr.time_point_code
     LEFT JOIN dim_instrument di ON di.instrument_id = sr.instrument_id_vendor
