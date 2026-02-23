@@ -33,42 +33,40 @@ DELETE FROM dim_timepoint;
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 5
+CREATE OR REPLACE TEMP VIEW tmp_dim_uom_seed AS
+SELECT *
+FROM VALUES
+    ('mg',       'Milligrams',                  'MASS',          CAST(0.001 AS DECIMAL(18,10)),          'kg'),
+    ('g',        'Grams',                       'MASS',          CAST(1.0 AS DECIMAL(18,10)),            'kg'),
+    ('mcg',      'Micrograms',                  'MASS',          CAST(0.000001 AS DECIMAL(18,10)),       'kg'),
+    ('%',        'Percent',                     'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('% w/w',    'Percent weight/weight',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('% w/v',    'Percent weight/volume',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('% area',   'Percent area (HPLC)',         'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('ppm',      'Parts per million',           'CONCENTRATION', CAST(0.000001 AS DECIMAL(18,10)),       CAST(NULL AS STRING)),
+    ('ppb',      'Parts per billion',           'CONCENTRATION', CAST(0.000000001 AS DECIMAL(18,10)),    CAST(NULL AS STRING)),
+    ('mg/mL',    'Milligrams per milliliter',   'CONCENTRATION', CAST(1.0 AS DECIMAL(18,10)),            'kg/m3'),
+    ('mg/g',     'Milligrams per gram',         'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          CAST(NULL AS STRING)),
+    ('mcg/mL',   'Micrograms per milliliter',   'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          'kg/m3'),
+    ('IU',       'International Units',         'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('IU/mg',    'International Units per mg',  'CONCENTRATION', CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('CFU/g',    'Colony forming units per g',  'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('CFU/mL',   'Colony forming units per mL', 'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('EU/mg',    'Endotoxin units per mg',      'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('mL',       'Milliliters',                 'VOLUME',        CAST(0.000001 AS DECIMAL(18,10)),       'm3'),
+    ('L',        'Liters',                      'VOLUME',        CAST(0.001 AS DECIMAL(18,10)),          'm3'),
+    ('mm',       'Millimeters',                 'LENGTH',        CAST(0.001 AS DECIMAL(18,10)),          'm'),
+    ('min',      'Minutes',                     'OTHER',         CAST(60.0 AS DECIMAL(18,10)),           's'),
+    ('pH',       'pH units',                    'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('N/A',      'Not applicable',              'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
+    ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
+    ('% (Q)',    'Percent dissolved (Q value)', 'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
+AS seed(uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit);
+
+
 MERGE INTO dim_uom AS tgt
-USING (
-    SELECT
-        col1 AS uom_code,
-        col2 AS uom_name,
-        col3 AS uom_category,
-        col4 AS si_conversion_factor,
-        col5 AS si_base_unit
-    FROM VALUES
-        ('mg',       'Milligrams',                  'MASS',          CAST(0.001 AS DECIMAL(18,10)),          'kg'),
-        ('g',        'Grams',                       'MASS',          CAST(1.0 AS DECIMAL(18,10)),            'kg'),
-        ('mcg',      'Micrograms',                  'MASS',          CAST(0.000001 AS DECIMAL(18,10)),       'kg'),
-        ('%',        'Percent',                     'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('% w/w',    'Percent weight/weight',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('% w/v',    'Percent weight/volume',       'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('% area',   'Percent area (HPLC)',         'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('ppm',      'Parts per million',           'CONCENTRATION', CAST(0.000001 AS DECIMAL(18,10)),       CAST(NULL AS STRING)),
-        ('ppb',      'Parts per billion',           'CONCENTRATION', CAST(0.000000001 AS DECIMAL(18,10)),    CAST(NULL AS STRING)),
-        ('mg/mL',    'Milligrams per milliliter',   'CONCENTRATION', CAST(1.0 AS DECIMAL(18,10)),            'kg/m3'),
-        ('mg/g',     'Milligrams per gram',         'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          CAST(NULL AS STRING)),
-        ('mcg/mL',   'Micrograms per milliliter',   'CONCENTRATION', CAST(0.001 AS DECIMAL(18,10)),          'kg/m3'),
-        ('IU',       'International Units',         'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('IU/mg',    'International Units per mg',  'CONCENTRATION', CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('CFU/g',    'Colony forming units per g',  'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('CFU/mL',   'Colony forming units per mL', 'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('EU/mg',    'Endotoxin units per mg',      'COUNT',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('mL',       'Milliliters',                 'VOLUME',        CAST(0.000001 AS DECIMAL(18,10)),       'm3'),
-        ('L',        'Liters',                      'VOLUME',        CAST(0.001 AS DECIMAL(18,10)),          'm3'),
-        ('mm',       'Millimeters',                 'LENGTH',        CAST(0.001 AS DECIMAL(18,10)),          'm'),
-        ('min',      'Minutes',                     'OTHER',         CAST(60.0 AS DECIMAL(18,10)),           's'),
-        ('pH',       'pH units',                    'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('N/A',      'Not applicable',              'OTHER',         CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
-        ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
-        ('% (Q)',    'Percent dissolved (Q value)',  'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
-) src
+USING tmp_dim_uom_seed src
 ON tgt.uom_code = src.uom_code
 WHEN MATCHED THEN UPDATE SET
   tgt.uom_name = src.uom_name,
@@ -87,28 +85,32 @@ VALUES (src.uom_code, src.uom_name, src.uom_category, src.si_conversion_factor, 
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 7
+CREATE OR REPLACE TEMP VIEW tmp_dim_limit_type_seed AS
+SELECT *
+FROM VALUES
+    ('AC',        'Acceptance Criteria',    'Regulatory acceptance limits for release and stability testing',   3, 'REGULATORY', TRUE, 1, CURRENT_TIMESTAMP()),
+    ('NOR',       'Normal Operating Range', 'Tighter internal operating range derived from process capability', 1, 'OPERATIONAL', FALSE, 2, CURRENT_TIMESTAMP()),
+    ('PAR',       'Proven Acceptable Range','Wider range demonstrated by development and validation data',      2, 'DESIGN_SPACE', FALSE, 3, CURRENT_TIMESTAMP()),
+    ('ALERT',     'Alert Limit',            'Statistical alert limit — triggers investigation if breached',     NULL, 'PROCESS_CTRL', FALSE, 4, CURRENT_TIMESTAMP()),
+    ('ACTION',    'Action Limit',           'Statistical action limit — triggers corrective action',            NULL, 'PROCESS_CTRL', FALSE, 5, CURRENT_TIMESTAMP()),
+    ('IPC_LIMIT', 'In-Process Control',     'In-process control limit used during manufacturing',               NULL, 'PROCESS_CTRL', FALSE, 6, CURRENT_TIMESTAMP()),
+    ('REPORT',    'Report Only',            'Informational limit — no pass/fail decision',                      NULL, 'INFORMATIONAL', FALSE, 7, CURRENT_TIMESTAMP())
+AS seed(limit_type_code, limit_type_name, limit_type_description, hierarchy_level, limit_category, is_regulatory, sort_order, load_timestamp);
+
+
 MERGE INTO dim_limit_type AS tgt
-USING (
-    VALUES
-        ('AC',        'Acceptance Criteria',    'Regulatory acceptance limits for release and stability testing',   3, 'REGULATORY', TRUE, 1, CURRENT_TIMESTAMP()),
-        ('NOR',       'Normal Operating Range', 'Tighter internal operating range derived from process capability', 1, 'OPERATIONAL', FALSE, 2, CURRENT_TIMESTAMP()),
-        ('PAR',       'Proven Acceptable Range','Wider range demonstrated by development and validation data',      2, 'DESIGN_SPACE', FALSE, 3, CURRENT_TIMESTAMP()),
-        ('ALERT',     'Alert Limit',            'Statistical alert limit — triggers investigation if breached',     NULL, 'PROCESS_CTRL', FALSE, 4, CURRENT_TIMESTAMP()),
-        ('ACTION',    'Action Limit',           'Statistical action limit — triggers corrective action',            NULL, 'PROCESS_CTRL', FALSE, 5, CURRENT_TIMESTAMP()),
-        ('IPC_LIMIT', 'In-Process Control',     'In-process control limit used during manufacturing',               NULL, 'PROCESS_CTRL', FALSE, 6, CURRENT_TIMESTAMP()),
-        ('REPORT',    'Report Only',            'Informational limit — no pass/fail decision',                      NULL, 'INFORMATIONAL', FALSE, 7, CURRENT_TIMESTAMP())
-) src
-ON tgt.limit_type_code = src.col1
+USING tmp_dim_limit_type_seed src
+ON tgt.limit_type_code = src.limit_type_code
 WHEN MATCHED THEN UPDATE SET
-  tgt.limit_type_name = src.col2,
-  tgt.limit_type_description = src.col3,
-  tgt.hierarchy_level = src.col4,
-  tgt.limit_category = src.col5,
-  tgt.is_regulatory = src.col6,
-  tgt.sort_order = src.col7,
-  tgt.load_timestamp = src.col8
+  tgt.limit_type_name = src.limit_type_name,
+  tgt.limit_type_description = src.limit_type_description,
+  tgt.hierarchy_level = src.hierarchy_level,
+  tgt.limit_category = src.limit_category,
+  tgt.is_regulatory = src.is_regulatory,
+  tgt.sort_order = src.sort_order,
+  tgt.load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (limit_type_code, limit_type_name, limit_type_description, hierarchy_level, limit_category, is_regulatory, sort_order, load_timestamp)
-VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7, src.col8);
+VALUES (src.limit_type_code, src.limit_type_name, src.limit_type_description, src.hierarchy_level, src.limit_category, src.is_regulatory, src.sort_order, src.load_timestamp);
 
 -- COMMAND ----------
 
@@ -118,37 +120,41 @@ VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7, sr
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 9
+CREATE OR REPLACE TEMP VIEW tmp_dim_regulatory_context_seed AS
+SELECT *
+FROM VALUES
+    ('US-NDA-3.2.P.5.1',  'US',  'United States',   'FDA',  'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('US-NDA-3.2.S.4.1',  'US',  'United States',   'FDA',  'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
+    ('US-ANDA-3.2.P.5.1', 'US',  'United States',   'FDA',  'ANDA', NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('US-ANDA-3.2.S.4.1', 'US',  'United States',   'FDA',  'ANDA', NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
+    ('US-BLA-3.2.P.5.1',  'US',  'United States',   'FDA',  'BLA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('US-IND-3.2.P.5.1',  'US',  'United States',   'FDA',  'IND',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('EU-MAA-3.2.P.5.1',  'EU',  'European Union',  'EMA',  'MAA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('EU-MAA-3.2.S.4.1',  'EU',  'European Union',  'EMA',  'MAA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
+    ('JP-JNDA-3.2.P.5.1', 'JP',  'Japan',           'PMDA', 'JNDA', NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('JP-JNDA-3.2.S.4.1', 'JP',  'Japan',           'PMDA', 'JNDA', NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
+    ('CN-NDA-3.2.P.5.1',  'CN',  'China',           'NMPA', 'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('CN-NDA-3.2.S.4.1',  'CN',  'China',           'NMPA', 'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
+    ('ROW-NDA-3.2.P.5.1', 'ROW', 'Rest of World',   NULL,   'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
+    ('ROW-NDA-3.2.S.4.1', 'ROW', 'Rest of World',   NULL,   'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP())
+AS seed(regulatory_context_code, region_code, region_name, regulatory_body, submission_type, guideline_code, guideline_name, ctd_module, ctd_section, load_timestamp);
+
+
 MERGE INTO dim_regulatory_context AS tgt
-USING (
-    VALUES
-        ('US-NDA-3.2.P.5.1',  'US',  'United States',   'FDA',  'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('US-NDA-3.2.S.4.1',  'US',  'United States',   'FDA',  'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
-        ('US-ANDA-3.2.P.5.1', 'US',  'United States',   'FDA',  'ANDA', NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('US-ANDA-3.2.S.4.1', 'US',  'United States',   'FDA',  'ANDA', NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
-        ('US-BLA-3.2.P.5.1',  'US',  'United States',   'FDA',  'BLA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('US-IND-3.2.P.5.1',  'US',  'United States',   'FDA',  'IND',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('EU-MAA-3.2.P.5.1',  'EU',  'European Union',  'EMA',  'MAA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('EU-MAA-3.2.S.4.1',  'EU',  'European Union',  'EMA',  'MAA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
-        ('JP-JNDA-3.2.P.5.1', 'JP',  'Japan',           'PMDA', 'JNDA', NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('JP-JNDA-3.2.S.4.1', 'JP',  'Japan',           'PMDA', 'JNDA', NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
-        ('CN-NDA-3.2.P.5.1',  'CN',  'China',           'NMPA', 'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('CN-NDA-3.2.S.4.1',  'CN',  'China',           'NMPA', 'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP()),
-        ('ROW-NDA-3.2.P.5.1', 'ROW', 'Rest of World',   NULL,   'NDA',  NULL, NULL, '3.2.P.5.1', 'Specifications — Drug Product',  CURRENT_TIMESTAMP()),
-        ('ROW-NDA-3.2.S.4.1', 'ROW', 'Rest of World',   NULL,   'NDA',  NULL, NULL, '3.2.S.4.1', 'Specifications — Drug Substance', CURRENT_TIMESTAMP())
-) src
-ON tgt.regulatory_context_code = src.col1
+USING tmp_dim_regulatory_context_seed src
+ON tgt.regulatory_context_code = src.regulatory_context_code
 WHEN MATCHED THEN UPDATE SET
-  tgt.region_code = src.col2,
-  tgt.region_name = src.col3,
-  tgt.regulatory_body = src.col4,
-  tgt.submission_type = src.col5,
-  tgt.guideline_code = src.col6,
-  tgt.guideline_name = src.col7,
-  tgt.ctd_module = src.col8,
-  tgt.ctd_section = src.col9,
-  tgt.load_timestamp = src.col10
+  tgt.region_code = src.region_code,
+  tgt.region_name = src.region_name,
+  tgt.regulatory_body = src.regulatory_body,
+  tgt.submission_type = src.submission_type,
+  tgt.guideline_code = src.guideline_code,
+  tgt.guideline_name = src.guideline_name,
+  tgt.ctd_module = src.ctd_module,
+  tgt.ctd_section = src.ctd_section,
+  tgt.load_timestamp = src.load_timestamp
 WHEN NOT MATCHED THEN INSERT (regulatory_context_code, region_code, region_name, regulatory_body, submission_type, guideline_code, guideline_name, ctd_module, ctd_section, load_timestamp)
-VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7, src.col8, src.col9, src.col10);
+VALUES (src.regulatory_context_code, src.region_code, src.region_name, src.regulatory_body, src.submission_type, src.guideline_code, src.guideline_name, src.ctd_module, src.ctd_section, src.load_timestamp);
 
 -- COMMAND ----------
 
@@ -158,25 +164,29 @@ VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7, sr
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 11
+CREATE OR REPLACE TEMP VIEW tmp_dim_stability_condition_seed AS
+SELECT *
+FROM VALUES
+    (1, '25C60RH',  '25°C / 60% RH',  CAST(25.0 AS DECIMAL(5,1)), CAST(60.0 AS DECIMAL(5,1)), 'LONG_TERM',    TRUE),
+    (2, '30C65RH',  '30°C / 65% RH',  CAST(30.0 AS DECIMAL(5,1)), CAST(65.0 AS DECIMAL(5,1)), 'INTERMEDIATE', TRUE),
+    (3, '40C75RH',  '40°C / 75% RH',  CAST(40.0 AS DECIMAL(5,1)), CAST(75.0 AS DECIMAL(5,1)), 'ACCELERATED',  TRUE),
+    (4, '5C',       '5°C ± 3°C',      CAST(5.0 AS DECIMAL(5,1)),  NULL,                         'REFRIGERATED', TRUE),
+    (5, 'REFRIG',   '2-8°C',          CAST(5.0 AS DECIMAL(5,1)),  NULL,                         'REFRIGERATED', TRUE),
+    (6, 'FREEZER',  '-20°C ± 5°C',    CAST(-20.0 AS DECIMAL(5,1)),NULL,                         'FROZEN',       TRUE)
+AS seed(condition_key, condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, is_active);
+
+
 MERGE INTO dim_stability_condition AS tgt
-USING (
-    VALUES
-        (1, '25C60RH',  '25°C / 60% RH',  CAST(25.0 AS DECIMAL(5,1)), CAST(60.0 AS DECIMAL(5,1)), 'LONG_TERM',     TRUE),
-        (2, '30C65RH',  '30°C / 65% RH',  CAST(30.0 AS DECIMAL(5,1)), CAST(65.0 AS DECIMAL(5,1)), 'INTERMEDIATE',  TRUE),
-        (3, '40C75RH',  '40°C / 75% RH',  CAST(40.0 AS DECIMAL(5,1)), CAST(75.0 AS DECIMAL(5,1)), 'ACCELERATED',   TRUE),
-        (4, '5C',       '5°C ± 3°C',      CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED',  TRUE),
-        (5, 'REFRIG',   '2-8°C',          CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED',  TRUE),
-        (6, 'FREEZER',  '-20°C ± 5°C',    CAST(-20.0 AS DECIMAL(5,1)),NULL, 'FROZEN',        TRUE)
-) src
-ON tgt.condition_code = src.col2
+USING tmp_dim_stability_condition_seed src
+ON tgt.condition_code = src.condition_code
 WHEN MATCHED THEN UPDATE SET
-  tgt.condition_name = src.col3,
-  tgt.temperature_celsius = src.col4,
-  tgt.humidity_pct = src.col5,
-  tgt.ich_condition_type = src.col6,
-  tgt.is_active = src.col7
+  tgt.condition_name = src.condition_name,
+  tgt.temperature_celsius = src.temperature_celsius,
+  tgt.humidity_pct = src.humidity_pct,
+  tgt.ich_condition_type = src.ich_condition_type,
+  tgt.is_active = src.is_active
 WHEN NOT MATCHED THEN INSERT (condition_key, condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, is_active)
-VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7);
+VALUES (src.condition_key, src.condition_code, src.condition_name, src.temperature_celsius, src.humidity_pct, src.ich_condition_type, src.is_active);
 
 -- COMMAND ----------
 
@@ -186,27 +196,31 @@ VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6, src.col7);
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 13
+CREATE OR REPLACE TEMP VIEW tmp_dim_timepoint_seed AS
+SELECT *
+FROM VALUES
+    (1, 'T0',   0,  'Initial',   1, TRUE),
+    (2, 'T1M',  1,  '1 Month',   2, TRUE),
+    (3, 'T3M',  3,  '3 Months',  3, TRUE),
+    (4, 'T6M',  6,  '6 Months',  4, TRUE),
+    (5, 'T9M',  9,  '9 Months',  5, TRUE),
+    (6, 'T12M', 12, '12 Months', 6, TRUE),
+    (7, 'T18M', 18, '18 Months', 7, TRUE),
+    (8, 'T24M', 24, '24 Months', 8, TRUE),
+    (9, 'T36M', 36, '36 Months', 9, TRUE)
+AS seed(timepoint_key, timepoint_code, timepoint_months, timepoint_name, display_order, is_active);
+
+
 MERGE INTO dim_timepoint AS tgt
-USING (
-    VALUES
-        (1, 'T0',   0,  'Initial',    1,  TRUE),
-        (2, 'T1M',  1,  '1 Month',    2,  TRUE),
-        (3, 'T3M',  3,  '3 Months',   3,  TRUE),
-        (4, 'T6M',  6,  '6 Months',   4,  TRUE),
-        (5, 'T9M',  9,  '9 Months',   5,  TRUE),
-        (6, 'T12M', 12, '12 Months',  6,  TRUE),
-        (7, 'T18M', 18, '18 Months',  7,  TRUE),
-        (8, 'T24M', 24, '24 Months',  8,  TRUE),
-        (9, 'T36M', 36, '36 Months',  9,  TRUE)
-) src
-ON tgt.timepoint_code = src.col2
+USING tmp_dim_timepoint_seed src
+ON tgt.timepoint_code = src.timepoint_code
 WHEN MATCHED THEN UPDATE SET
-  tgt.timepoint_months = src.col3,
-  tgt.timepoint_name = src.col4,
-  tgt.display_order = src.col5,
-  tgt.is_active = src.col6
+  tgt.timepoint_months = src.timepoint_months,
+  tgt.timepoint_name = src.timepoint_name,
+  tgt.display_order = src.display_order,
+  tgt.is_active = src.is_active
 WHEN NOT MATCHED THEN INSERT (timepoint_key, timepoint_code, timepoint_months, timepoint_name, display_order, is_active)
-VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, src.col6);
+VALUES (src.timepoint_key, src.timepoint_code, src.timepoint_months, src.timepoint_name, src.display_order, src.is_active);
 
 -- COMMAND ----------
 
