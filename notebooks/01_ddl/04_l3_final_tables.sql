@@ -14,7 +14,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-USE SCHEMA l3_spec_products;
+USE SCHEMA l3_data_product;
 
 -- COMMAND ----------
 
@@ -25,7 +25,7 @@ USE SCHEMA l3_spec_products;
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_spec_products.obt_specification_ctd
+CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
 (
     obt_ctd_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
@@ -118,7 +118,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_spec_products.obt_acceptance_criteria
+CREATE TABLE IF NOT EXISTS l3_data_product.obt_acceptance_criteria
 (
     obt_ac_key                  BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
@@ -191,7 +191,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_spec_products.obt_stability_results
+CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
 (
     obt_stab_key                BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
@@ -295,4 +295,4 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-SHOW TABLES IN l3_spec_products;
+SHOW TABLES IN l3_data_product;

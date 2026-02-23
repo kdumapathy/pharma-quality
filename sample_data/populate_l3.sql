@@ -1,8 +1,8 @@
 -- =============================================================================
 -- L3 OBT Population — obt_specification_ctd
 -- =============================================================================
--- Source  : l2_2_spec_unified star schema (dim_* + fact_specification_limit)
--- Target  : l3_spec_products.obt_specification_ctd
+-- Source  : l2_2_unified_model star schema (dim_* + fact_specification_limit)
+-- Target  : l3_data_product.obt_specification_ctd
 -- Grain   : One row per spec_item (RELEASE) / per spec_item+time_point (STABILITY)
 -- Filter  : status_code in (APP, ACTIVE), is_current = TRUE, AC with is_in_filing = TRUE
 -- Strategy: TRUNCATE + INSERT (full overwrite — idempotent, safe to re-run)
@@ -11,9 +11,9 @@
 USE CATALOG pharma_quality;
 
 -- Full overwrite — safe to re-run
-TRUNCATE TABLE l3_spec_products.obt_specification_ctd;
+TRUNCATE TABLE l3_data_product.obt_specification_ctd;
 
-INSERT INTO l3_spec_products.obt_specification_ctd
+INSERT INTO l3_data_product.obt_specification_ctd
 SELECT
     -- -------------------------------------------------------------------------
     -- Block 1: Specification Header
@@ -181,33 +181,33 @@ SELECT
     current_timestamp()         AS load_timestamp,
     '2.0.0'                     AS data_product_version
 
-FROM l2_2_spec_unified.dim_specification s
-JOIN l2_2_spec_unified.dim_specification_item i
+FROM l2_2_unified_model.dim_specification s
+JOIN l2_2_unified_model.dim_specification_item i
     ON s.spec_key = i.spec_key AND i.is_current = TRUE
-JOIN l2_2_spec_unified.fact_specification_limit f
+JOIN l2_2_unified_model.fact_specification_limit f
     ON i.spec_item_key = f.spec_item_key AND f.is_current = TRUE
-JOIN l2_2_spec_unified.dim_limit_type lt
+JOIN l2_2_unified_model.dim_limit_type lt
     ON f.limit_type_key = lt.limit_type_key
-LEFT JOIN l2_2_spec_unified.dim_site st
+LEFT JOIN l2_2_unified_model.dim_site st
     ON s.site_key = st.site_key AND st.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_market mk
+LEFT JOIN l2_2_unified_model.dim_market mk
     ON s.market_key = mk.market_key AND mk.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_product p
+LEFT JOIN l2_2_unified_model.dim_product p
     ON s.product_key = p.product_key AND p.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_material m
+LEFT JOIN l2_2_unified_model.dim_material m
     ON s.material_key = m.material_key AND m.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_regulatory_context rc
+LEFT JOIN l2_2_unified_model.dim_regulatory_context rc
     ON s.regulatory_context_key = rc.regulatory_context_key
-LEFT JOIN l2_2_spec_unified.dim_test_method tm
+LEFT JOIN l2_2_unified_model.dim_test_method tm
     ON i.test_method_key = tm.test_method_key AND tm.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_uom u
+LEFT JOIN l2_2_unified_model.dim_uom u
     ON i.uom_key = u.uom_key
 WHERE UPPER(COALESCE(s.status_code, '')) IN ('APP', 'ACTIVE')
   AND s.is_current = TRUE
   AND EXISTS (
       SELECT 1
-      FROM l2_2_spec_unified.fact_specification_limit fac
-      JOIN l2_2_spec_unified.dim_limit_type lac ON fac.limit_type_key = lac.limit_type_key
+      FROM l2_2_unified_model.fact_specification_limit fac
+      JOIN l2_2_unified_model.dim_limit_type lac ON fac.limit_type_key = lac.limit_type_key
       WHERE fac.spec_item_key = i.spec_item_key
         AND lac.limit_type_code = 'AC'
         AND fac.is_in_filing = TRUE
@@ -277,7 +277,7 @@ SELECT
     is_hierarchy_valid,
     is_release_spec,
     data_product_version
-FROM l3_spec_products.obt_specification_ctd
+FROM l3_data_product.obt_specification_ctd
 WHERE spec_type_code = 'DP'
 ORDER BY sequence_number;
 
@@ -289,9 +289,9 @@ ORDER BY sequence_number;
 --   par_vs_ac_factor  (PAR_width / AC_width)
 -- =============================================================================
 
-TRUNCATE TABLE l3_spec_products.obt_acceptance_criteria;
+TRUNCATE TABLE l3_data_product.obt_acceptance_criteria;
 
-INSERT INTO l3_spec_products.obt_acceptance_criteria
+INSERT INTO l3_data_product.obt_acceptance_criteria
 SELECT
     spec_number,
     spec_version,
@@ -362,7 +362,7 @@ SELECT
     is_hierarchy_valid,
     source_system_code,
     current_timestamp()                                 AS load_timestamp
-FROM l3_spec_products.obt_specification_ctd;
+FROM l3_data_product.obt_specification_ctd;
 
 -- =============================================================================
 -- V5: obt_acceptance_criteria — limit comparison with width analytics
@@ -386,5 +386,5 @@ SELECT
     par_width,
     par_vs_ac_factor,
     is_hierarchy_valid
-FROM l3_spec_products.obt_acceptance_criteria
+FROM l3_data_product.obt_acceptance_criteria
 ORDER BY spec_type_code, spec_number, sequence_number;

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : obt_acceptance_criteria
--- Schema : l3_spec_products
+-- Schema : l3_data_product
 -- Layer  : L3 — Final Data Product Layer
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per test per specification (release acceptance criteria only;
@@ -16,7 +16,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l3_spec_products.obt_acceptance_criteria
+CREATE TABLE IF NOT EXISTS l3_data_product.obt_acceptance_criteria
 (
     -- =========================================================================
     -- IDENTIFICATION
@@ -117,4 +117,4 @@ TBLPROPERTIES (
     'quality.primary_consumer'          = 'spec_review,CTD_3.2.P.5.6,limit_comparison'
 );
 
--- OPTIMIZE l3_spec_products.obt_acceptance_criteria ZORDER BY (spec_number, test_name, stability_time_point);
+-- OPTIMIZE l3_data_product.obt_acceptance_criteria ZORDER BY (spec_number, test_name, stability_time_point);

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_product
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per pharmaceutical product (MDM-mastered)
@@ -9,7 +9,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_product
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_product
 (
     -- -------------------------------------------------------------------------
     -- Keys

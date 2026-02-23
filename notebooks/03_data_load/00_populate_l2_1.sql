@@ -22,7 +22,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-MERGE INTO l2_1_lims.src_lims_specification AS tgt
+MERGE INTO l2_1_scl.src_lims_specification AS tgt
 USING (
     SELECT
         specification_id                                AS source_specification_id,
@@ -95,7 +95,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
-MERGE INTO l2_1_lims.src_lims_spec_item AS tgt
+MERGE INTO l2_1_scl.src_lims_spec_item AS tgt
 USING (
     SELECT
         spec_item_id                                    AS source_spec_item_id,
@@ -164,7 +164,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
-MERGE INTO l2_1_lims.src_lims_spec_limit AS tgt
+MERGE INTO l2_1_scl.src_lims_spec_limit AS tgt
 USING (
     SELECT
         limit_id                                        AS source_limit_id,
@@ -239,7 +239,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
-MERGE INTO l2_1_lims.src_process_recipe AS tgt
+MERGE INTO l2_1_scl.src_process_recipe AS tgt
 USING (
     SELECT
         recipe_id                                       AS source_recipe_id,
@@ -302,7 +302,7 @@ WHEN NOT MATCHED THEN INSERT *;
 -- COMMAND ----------
 
 -- DBTITLE 1,Cell 12
-MERGE INTO l2_1_lims.src_pdf_specification AS tgt
+MERGE INTO l2_1_scl.src_pdf_specification AS tgt
 USING (
     SELECT
         document_id                                     AS source_document_id,
@@ -444,7 +444,7 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
-MERGE INTO l2_1_lims.src_vendor_analytical_results AS tgt
+MERGE INTO l2_1_scl.src_vendor_analytical_results AS tgt
 USING (
     SELECT
         result_id                                       AS source_result_id,
@@ -555,14 +555,14 @@ WHEN NOT MATCHED THEN INSERT *;
 
 -- COMMAND ----------
 
-SELECT 'src_lims_specification' AS table_name, COUNT(*) AS rows FROM l2_1_lims.src_lims_specification
+SELECT 'src_lims_specification' AS table_name, COUNT(*) AS rows FROM l2_1_scl.src_lims_specification
 UNION ALL
-SELECT 'src_lims_spec_item', COUNT(*) FROM l2_1_lims.src_lims_spec_item
+SELECT 'src_lims_spec_item', COUNT(*) FROM l2_1_scl.src_lims_spec_item
 UNION ALL
-SELECT 'src_lims_spec_limit', COUNT(*) FROM l2_1_lims.src_lims_spec_limit
+SELECT 'src_lims_spec_limit', COUNT(*) FROM l2_1_scl.src_lims_spec_limit
 UNION ALL
-SELECT 'src_process_recipe', COUNT(*) FROM l2_1_lims.src_process_recipe
+SELECT 'src_process_recipe', COUNT(*) FROM l2_1_scl.src_process_recipe
 UNION ALL
-SELECT 'src_pdf_specification', COUNT(*) FROM l2_1_lims.src_pdf_specification
+SELECT 'src_pdf_specification', COUNT(*) FROM l2_1_scl.src_pdf_specification
 UNION ALL
-SELECT 'src_vendor_analytical_results', COUNT(*) FROM l2_1_lims.src_vendor_analytical_results;
+SELECT 'src_vendor_analytical_results', COUNT(*) FROM l2_1_scl.src_vendor_analytical_results;

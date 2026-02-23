@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : fact_specification_limit
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per limit type per specification item per stage / time point
@@ -24,7 +24,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.fact_specification_limit
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.fact_specification_limit
 (
     -- -------------------------------------------------------------------------
     -- Keys
@@ -190,7 +190,7 @@ TBLPROPERTIES (
     'quality.source_model'              = 'SPECIFICATION_LIMIT_SET + CONTROL_LIMITS (specification_data_model_30-jan.html)'
 );
 
--- OPTIMIZE l2_2_spec_unified.fact_specification_limit ZORDER BY (spec_item_key, limit_type_key);
+-- OPTIMIZE l2_2_unified_model.fact_specification_limit ZORDER BY (spec_item_key, limit_type_key);
 
 -- =============================================================================
 -- Key Query Patterns
@@ -198,10 +198,10 @@ TBLPROPERTIES (
 
 -- 1. Get all Acceptance Criteria for a specification (for CTD table)
 -- SELECT f.*, i.test_name, i.sequence_number, u.uom_code
--- FROM l2_2_spec_unified.fact_specification_limit f
--- JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
--- JOIN l2_2_spec_unified.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
--- LEFT JOIN l2_2_spec_unified.dim_uom u ON f.uom_key = u.uom_key
+-- FROM l2_2_unified_model.fact_specification_limit f
+-- JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+-- JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
+-- LEFT JOIN l2_2_unified_model.dim_uom u ON f.uom_key = u.uom_key
 -- WHERE f.spec_key = :spec_key
 --   AND lt.limit_type_code = 'AC'
 --   AND f.stage_code = 'RELEASE'
@@ -218,9 +218,9 @@ TBLPROPERTIES (
 --     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) AS nor_upper,
 --     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) AS ac_upper,
 --     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.upper_limit_value END) AS par_upper
--- FROM l2_2_spec_unified.fact_specification_limit f
--- JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
--- JOIN l2_2_spec_unified.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
+-- FROM l2_2_unified_model.fact_specification_limit f
+-- JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+-- JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
 -- WHERE f.spec_key = :spec_key AND f.is_current = TRUE AND f.stage_code = 'RELEASE'
 -- GROUP BY i.spec_item_key, i.test_name
 -- HAVING nor_lower < ac_lower OR ac_lower < par_lower  -- flag violations

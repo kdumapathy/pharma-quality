@@ -1,8 +1,8 @@
 -- =============================================================================
 -- dspec_specification population
 -- =============================================================================
--- Source : l2_2_spec_unified star schema
--- Target : l2_2_spec_unified.dspec_specification
+-- Source : l2_2_unified_model star schema
+-- Target : l2_2_unified_model.dspec_specification
 -- Grain  : One row per spec_item with ALL limit types pivoted as columns
 --          (AC, NOR, PAR, ALERT, ACTION)
 -- Strategy: TRUNCATE + INSERT (full overwrite — idempotent)
@@ -12,9 +12,9 @@
 
 USE CATALOG pharma_quality;
 
-TRUNCATE TABLE l2_2_spec_unified.dspec_specification;
+TRUNCATE TABLE l2_2_unified_model.dspec_specification;
 
-INSERT INTO l2_2_spec_unified.dspec_specification
+INSERT INTO l2_2_unified_model.dspec_specification
 SELECT
     -- -------------------------------------------------------------------------
     -- Section A: Specification Header
@@ -184,28 +184,28 @@ SELECT
     current_timestamp()                                         AS load_timestamp,
     TRUE                                                        AS is_current
 
-FROM l2_2_spec_unified.dim_specification s
-JOIN l2_2_spec_unified.dim_specification_item i
+FROM l2_2_unified_model.dim_specification s
+JOIN l2_2_unified_model.dim_specification_item i
     ON s.spec_key = i.spec_key AND i.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.fact_specification_limit f
+LEFT JOIN l2_2_unified_model.fact_specification_limit f
     ON i.spec_item_key = f.spec_item_key AND f.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_limit_type lt
+LEFT JOIN l2_2_unified_model.dim_limit_type lt
     ON f.limit_type_key = lt.limit_type_key
-LEFT JOIN l2_2_spec_unified.dim_product p
+LEFT JOIN l2_2_unified_model.dim_product p
     ON s.product_key = p.product_key AND p.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_material m
+LEFT JOIN l2_2_unified_model.dim_material m
     ON s.material_key = m.material_key AND m.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_regulatory_context rc
+LEFT JOIN l2_2_unified_model.dim_regulatory_context rc
     ON s.regulatory_context_key = rc.regulatory_context_key
-LEFT JOIN l2_2_spec_unified.dim_site st
+LEFT JOIN l2_2_unified_model.dim_site st
     ON s.site_key = st.site_key AND st.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_market mk
+LEFT JOIN l2_2_unified_model.dim_market mk
     ON s.market_key = mk.market_key AND mk.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_test_method tm
+LEFT JOIN l2_2_unified_model.dim_test_method tm
     ON i.test_method_key = tm.test_method_key AND tm.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_uom u
+LEFT JOIN l2_2_unified_model.dim_uom u
     ON i.uom_key = u.uom_key
-LEFT JOIN l2_2_spec_unified.dim_uom fu
+LEFT JOIN l2_2_unified_model.dim_uom fu
     ON f.uom_key = fu.uom_key
 WHERE s.is_current = TRUE
 GROUP BY
@@ -266,5 +266,5 @@ SELECT
     alert_sample_size,
     is_hierarchy_valid,
     is_current
-FROM l2_2_spec_unified.dspec_specification
+FROM l2_2_unified_model.dspec_specification
 ORDER BY spec_type_code, spec_number, sequence_number;

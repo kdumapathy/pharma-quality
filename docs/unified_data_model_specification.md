@@ -72,7 +72,7 @@ A **specification** is a formal document that establishes the criteria to which 
                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  L2.1 — SOURCE CONFORM LAYER                                         │
-│  Schema: l2_1_<source_system>  (e.g., l2_1_lims, l2_1_sap)         │
+│  Schema: l2_1_<source_system>  (e.g., l2_1_scl, l2_1_sap)         │
 │  • Per-source-system clean and typed tables                          │
 │  • Source business rules applied                                     │
 │  • Standardized data types, null handling, deduplication            │
@@ -82,7 +82,7 @@ A **specification** is a formal document that establishes the criteria to which 
                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  L2.2 — UNIFIED DATA MODEL (Business Conform Layer)                  │
-│  Schema: l2_2_spec_unified                                           │
+│  Schema: l2_2_unified_model                                           │
 │  • Dimensional / Star Schema (normalized)                            │
 │  • Semi-denormalized tables for analytical patterns                  │
 │  • SCD Type 2 for specification versioning                           │
@@ -93,7 +93,7 @@ A **specification** is a formal document that establishes the criteria to which 
                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  L3 — FINAL DATA PRODUCT LAYER                                       │
-│  Schema: l3_spec_products                                            │
+│  Schema: l3_data_product                                            │
 │  • One Big Table (OBT) — full denormalized, CTD-aligned             │
 │  • Aggregated summary tables                                         │
 │  • Regulatory submission-ready                                       │
@@ -114,11 +114,21 @@ A **specification** is a formal document that establishes the criteria to which 
 | Excel/Manual | Manual | Legacy specs, early development specs |
 | Regulatory DB | Reg | Filed specification commitments, NDA/ANDA references |
 
+## 3.1 Schema Naming Standard
+
+To keep the model enterprise-friendly and auditable, schema names follow a consistent pattern:
+
+- `l<layer>_<sub_layer>_<domain_or_purpose>` for canonical layers (for example, `l2_2_unified_model`).
+- Source-conform schemas use a short source-system code (for example, `l2_1_scl`).
+- L3 schemas use product-oriented names to reflect business ownership (for example, `l3_data_product`).
+
+This convention improves discoverability in Unity Catalog and makes lineage and ownership easier to infer from object names alone.
+
 ---
 
 ## 4. L2.2 Unified Data Model — Star Schema
 
-**Schema:** `l2_2_spec_unified`
+**Schema:** `l2_2_unified_model`
 **Catalog:** `pharma_quality_catalog`
 
 ### 4.1 Entity Relationship Diagram
@@ -177,7 +187,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_SPECIFICATION — Specification Header / Metadata
 
-**Table:** `l2_2_spec_unified.dim_specification`
+**Table:** `l2_2_unified_model.dim_specification`
 **Grain:** One row per specification version (SCD Type 2)
 **Description:** Captures the header-level attributes of a pharmaceutical specification document — its identity, regulatory context, lifecycle status, and linkage to product/material.
 
@@ -222,7 +232,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_SPECIFICATION_ITEM — Individual Specification Tests
 
-**Table:** `l2_2_spec_unified.dim_specification_item`
+**Table:** `l2_2_unified_model.dim_specification_item`
 **Grain:** One row per test/item per specification version
 **Description:** Each specification contains ordered test items (e.g., Appearance, Identification, Assay, Dissolution). This table captures the test metadata without limit values.
 
@@ -258,7 +268,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_LIMIT_TYPE — Limit Type Reference
 
-**Table:** `l2_2_spec_unified.dim_limit_type`
+**Table:** `l2_2_unified_model.dim_limit_type`
 **Grain:** One row per limit type (static reference table)
 **Description:** Classifies the type of each limit value, enabling normalized storage of NOR, PAR, Acceptance Criteria, Alert, Action, and other limit types in a single fact table.
 
@@ -288,7 +298,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_TEST_METHOD — Analytical Test Methods
 
-**Table:** `l2_2_spec_unified.dim_test_method`
+**Table:** `l2_2_unified_model.dim_test_method`
 **Grain:** One row per test method version
 
 | Column | Data Type | Nullable | Description |
@@ -313,7 +323,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_PRODUCT — Pharmaceutical Product
 
-**Table:** `l2_2_spec_unified.dim_product`
+**Table:** `l2_2_unified_model.dim_product`
 **Grain:** One row per product (MDM-managed)
 
 | Column | Data Type | Nullable | Description |
@@ -340,7 +350,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_MATERIAL — Drug Substance / Material
 
-**Table:** `l2_2_spec_unified.dim_material`
+**Table:** `l2_2_unified_model.dim_material`
 **Grain:** One row per material/substance (MDM-managed)
 
 | Column | Data Type | Nullable | Description |
@@ -364,7 +374,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_REGULATORY_CONTEXT — Regulatory Filing Context
 
-**Table:** `l2_2_spec_unified.dim_regulatory_context`
+**Table:** `l2_2_unified_model.dim_regulatory_context`
 **Grain:** One row per regulatory region/submission type combination
 
 | Column | Data Type | Nullable | Description |
@@ -384,7 +394,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_UOM — Unit of Measure
 
-**Table:** `l2_2_spec_unified.dim_uom`
+**Table:** `l2_2_unified_model.dim_uom`
 **Grain:** One row per unit of measure
 
 | Column | Data Type | Nullable | Description |
@@ -400,7 +410,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### DIM_DATE — Date Dimension
 
-**Table:** `l2_2_spec_unified.dim_date`
+**Table:** `l2_2_unified_model.dim_date`
 **Grain:** One row per calendar date
 
 | Column | Data Type | Description |
@@ -427,7 +437,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 #### FACT_SPECIFICATION_LIMIT — Normalized Specification Limits
 
-**Table:** `l2_2_spec_unified.fact_specification_limit`
+**Table:** `l2_2_unified_model.fact_specification_limit`
 **Grain:** One row per **limit type** per **specification item** per **stage/time point**
 **Description:** The central fact of the specification domain. Stores all limit values (NOR, PAR, Acceptance Criteria, Alert, Action, IPC) in a normalized structure. A single test item will have multiple rows — one per limit type applicable.
 
@@ -481,7 +491,7 @@ A **specification** is a formal document that establishes the criteria to which 
 
 ### DSPEC_SPECIFICATION — Denormalized Specification + Acceptance Criteria
 
-**Table:** `l2_2_spec_unified.dspec_specification`
+**Table:** `l2_2_unified_model.dspec_specification`
 **Grain:** One row per **specification item** with all limit types pivoted as columns
 **Description:** Semi-denormalized analytical table combining specification header, item attributes, and all limit types as pivoted columns. Optimized for specification review, quality control dashboards, and intermediate CTD preparation.
 
@@ -593,11 +603,11 @@ A **specification** is a formal document that establishes the criteria to which 
 
 ## 6. L3 Final Data Products (OBT)
 
-**Schema:** `l3_spec_products`
+**Schema:** `l3_data_product`
 
 ### OBT_SPECIFICATION_CTD — One Big Table for CTD Regulatory Filing
 
-**Table:** `l3_spec_products.obt_specification_ctd`
+**Table:** `l3_data_product.obt_specification_ctd`
 **Grain:** One row per specification item (release acceptance criteria, one row per test per specification)
 **Description:** Fully denormalized, CTD-aligned one-big-table. Merges all specification, item, limit, product, material, and method information into a single flat structure for:
 - CTD Module 3 narrative generation
@@ -627,7 +637,7 @@ This table includes **only `is_in_filing = TRUE`** limit records (Acceptance Cri
 
 ### OBT_ACCEPTANCE_CRITERIA — Acceptance Criteria Summary Table
 
-**Table:** `l3_spec_products.obt_acceptance_criteria`
+**Table:** `l3_data_product.obt_acceptance_criteria`
 **Grain:** One row per test per specification per stability time point
 **Description:** Focused OBT containing only regulatory acceptance criteria (what appears in the specification document). Optimized for specification comparison, trending, and gap analysis.
 

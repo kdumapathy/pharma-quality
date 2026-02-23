@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : src_lims_specification
--- Schema : l2_1_lims
+-- Schema : l2_1_scl
 -- Layer  : L2.1 — Source Conform Layer (LIMS-specific)
 -- Source : l1_raw.raw_lims_specification
 -- Grain  : One row per LIMS specification (latest ingested, deduplicated)
@@ -13,7 +13,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_lims_specification
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_lims_specification
 (
     -- Source key (preserved for traceability)
     source_specification_id     STRING          NOT NULL    COMMENT 'LIMS natural key (from raw layer)',
@@ -85,7 +85,7 @@ TBLPROPERTIES (
 -- =============================================================================
 -- L2.1 Transformation Logic (conceptual — implement as Databricks notebook/job)
 -- =============================================================================
--- INSERT OVERWRITE l2_1_lims.src_lims_specification
+-- INSERT OVERWRITE l2_1_scl.src_lims_specification
 -- WITH deduplicated AS (
 --     SELECT *,
 --         ROW_NUMBER() OVER (
