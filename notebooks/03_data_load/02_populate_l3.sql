@@ -331,7 +331,7 @@ SELECT
     i.test_code,
     i.test_category_code,
     i.test_category_name,
-    i.criticality_code,
+    i.criticality AS criticality_code,
     tm.method_name,
     tm.technique,
     f.stability_study_id,
