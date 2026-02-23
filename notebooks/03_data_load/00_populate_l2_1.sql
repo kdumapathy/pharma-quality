@@ -53,6 +53,7 @@ USING (
         TRIM(strength)                                  AS strength,
         CASE UPPER(TRIM(status))
             WHEN 'APPROVED' THEN 'APP'
+            WHEN 'ACTIVE'   THEN 'APP'
             WHEN 'DRAFT'    THEN 'DRA'
             WHEN 'SUPERSEDED' THEN 'SUP'
             WHEN 'OBSOLETE' THEN 'OBS'

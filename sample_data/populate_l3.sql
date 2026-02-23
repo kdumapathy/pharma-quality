@@ -4,7 +4,7 @@
 -- Source  : l2_2_spec_unified star schema (dim_* + fact_specification_limit)
 -- Target  : l3_spec_products.obt_specification_ctd
 -- Grain   : One row per spec_item (RELEASE) / per spec_item+time_point (STABILITY)
--- Filter  : status_code = APP, is_current = TRUE, AC with is_in_filing = TRUE
+-- Filter  : status_code in (APP, ACTIVE), is_current = TRUE, AC with is_in_filing = TRUE
 -- Strategy: TRUNCATE + INSERT (full overwrite — idempotent, safe to re-run)
 -- =============================================================================
 
@@ -202,7 +202,7 @@ LEFT JOIN l2_2_spec_unified.dim_test_method tm
     ON i.test_method_key = tm.test_method_key AND tm.is_current = TRUE
 LEFT JOIN l2_2_spec_unified.dim_uom u
     ON i.uom_key = u.uom_key
-WHERE s.status_code = 'APP'
+WHERE UPPER(COALESCE(s.status_code, '')) IN ('APP', 'ACTIVE')
   AND s.is_current = TRUE
   AND EXISTS (
       SELECT 1
