@@ -18,8 +18,17 @@ L1 (Raw) → L2.1 (Source Conform) → L2.2 (Unified Model) → L3 (Final Data P
 |-------|--------|-------------|
 | L1 | `l1_raw` | Raw ingestion from source systems, immutable |
 | L2.1 | `l2_1_<source>` | Source-specific cleansing and typing |
-| L2.2 | `l2_2_spec_unified` | Star schema + denormalized tables (this repo) |
-| L3 | `l3_spec_products` | One Big Table (OBT), CTD-ready final products |
+| L2.2 | `l2_2_unified_model` | Star schema + denormalized tables (this repo) |
+| L3 | `l3_data_product` | One Big Table (OBT), CTD-ready final products |
+
+
+## Naming Convention
+
+To keep the platform model consistent and professional for enterprise governance, schema naming uses a predictable pattern:
+
+- `l<layer>_<sub_layer>_<domain_or_purpose>` for business-conformed layers (example: `l2_2_unified_model`).
+- `l2_1_<source_code>` for source-conform schemas (example: `l2_1_scl`).
+- Product-facing L3 schemas emphasize consumption intent (example: `l3_data_product`).
 
 ## Repository Structure
 
@@ -63,9 +72,9 @@ pharma-quality/
 
 | CTD Section | Source Table | Filter |
 |-------------|-------------|--------|
-| 3.2.S.4.1 (DS Specification) | `l3_spec_products.obt_specification_ctd` | `spec_type_code='DS'` |
-| 3.2.P.5.1 (DP Specification) | `l3_spec_products.obt_specification_ctd` | `spec_type_code='DP'` |
-| 3.2.P.5.6 (Spec Justification) | `l3_spec_products.obt_acceptance_criteria` | AC vs PAR comparison |
+| 3.2.S.4.1 (DS Specification) | `l3_data_product.obt_specification_ctd` | `spec_type_code='DS'` |
+| 3.2.P.5.1 (DP Specification) | `l3_data_product.obt_specification_ctd` | `spec_type_code='DP'` |
+| 3.2.P.5.6 (Spec Justification) | `l3_data_product.obt_acceptance_criteria` | AC vs PAR comparison |
 
 ## Documentation
 
@@ -75,3 +84,24 @@ See [docs/unified_data_model_specification.md](docs/unified_data_model_specifica
 - Business rules and limit definitions
 - Partition and optimization strategy
 - Data lineage summary
+
+## Deployment Automation
+
+For schema/DDL updates followed by a full pipeline refresh, use:
+
+```bash
+python deploy/full_deploy.py
+```
+
+This orchestrator runs:
+1. `deploy/deploy.py` (schemas + DDL)
+2. `deploy/seed.py` (sample raw seed data)
+3. `notebooks/03_data_load/*.sql` (L2/L3 loads)
+4. `notebooks/04_validation/01_validation_queries.sql` (validation checks)
+
+Helpful options:
+- `--dry-run` to preview commands/statements
+- `--skip-seed` if raw data is already loaded
+- `--skip-validation` to stop after load
+- `--validation-only` to run only validation SELECT queries
+

@@ -17,9 +17,9 @@ USE CATALOG pharma_quality;
 -- COMMAND ----------
 
 -- DBTITLE 1,TRUNCATE and LOAD obt_specification_ctd
-TRUNCATE TABLE l3_spec_products.obt_specification_ctd;
+TRUNCATE TABLE l3_data_product.obt_specification_ctd;
 
-INSERT INTO l3_spec_products.obt_specification_ctd (
+INSERT INTO l3_data_product.obt_specification_ctd (
     spec_key,
     sequence_number,
     spec_number,
@@ -116,19 +116,19 @@ SELECT
     da.full_date AS approval_date,
     s.approver_name,
     CURRENT_TIMESTAMP() AS load_timestamp
-FROM l2_2_spec_unified.fact_specification_limit f
-JOIN l2_2_spec_unified.dim_specification s       ON f.spec_key = s.spec_key
-JOIN l2_2_spec_unified.dim_specification_item i  ON f.spec_item_key = i.spec_item_key
-JOIN l2_2_spec_unified.dim_limit_type lt         ON f.limit_type_key = lt.limit_type_key
-LEFT JOIN l2_2_spec_unified.dim_product p        ON s.product_key = p.product_key
-LEFT JOIN l2_2_spec_unified.dim_material m       ON s.material_key = m.material_key
-LEFT JOIN l2_2_spec_unified.dim_site st          ON s.site_key = st.site_key
-LEFT JOIN l2_2_spec_unified.dim_market mk        ON s.market_key = mk.market_key
-LEFT JOIN l2_2_spec_unified.dim_test_method tm   ON i.test_method_key = tm.test_method_key
-LEFT JOIN l2_2_spec_unified.dim_uom u            ON f.uom_key = u.uom_key
-LEFT JOIN l2_2_spec_unified.dim_date ds          ON f.effective_date = ds.full_date
-LEFT JOIN l2_2_spec_unified.dim_date de          ON f.effective_end_date = de.full_date
-LEFT JOIN l2_2_spec_unified.dim_date da          ON s.approval_date = da.full_date
+FROM l2_2_unified_model.fact_specification_limit f
+JOIN l2_2_unified_model.dim_specification s       ON f.spec_key = s.spec_key
+JOIN l2_2_unified_model.dim_specification_item i  ON f.spec_item_key = i.spec_item_key
+JOIN l2_2_unified_model.dim_limit_type lt         ON f.limit_type_key = lt.limit_type_key
+LEFT JOIN l2_2_unified_model.dim_product p        ON s.product_key = p.product_key
+LEFT JOIN l2_2_unified_model.dim_material m       ON s.material_key = m.material_key
+LEFT JOIN l2_2_unified_model.dim_site st          ON s.site_key = st.site_key
+LEFT JOIN l2_2_unified_model.dim_market mk        ON s.market_key = mk.market_key
+LEFT JOIN l2_2_unified_model.dim_test_method tm   ON i.test_method_key = tm.test_method_key
+LEFT JOIN l2_2_unified_model.dim_uom u            ON f.uom_key = u.uom_key
+LEFT JOIN l2_2_unified_model.dim_date ds          ON f.effective_date = ds.full_date
+LEFT JOIN l2_2_unified_model.dim_date de          ON f.effective_end_date = de.full_date
+LEFT JOIN l2_2_unified_model.dim_date da          ON s.approval_date = da.full_date
 WHERE f.is_current = TRUE
 
 -- COMMAND ----------
@@ -139,9 +139,9 @@ WHERE f.is_current = TRUE
 -- COMMAND ----------
 
 -- DBTITLE 1,LOAD obt_acceptance_criteria
-TRUNCATE TABLE l3_spec_products.obt_acceptance_criteria;
+TRUNCATE TABLE l3_data_product.obt_acceptance_criteria;
 
-INSERT INTO l3_spec_products.obt_acceptance_criteria (
+INSERT INTO l3_data_product.obt_acceptance_criteria (
     spec_number,
     spec_version,
     spec_type_code,
@@ -227,13 +227,13 @@ SELECT
          OR MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) IS NULL)
     THEN TRUE ELSE FALSE END AS is_hierarchy_valid,
     CURRENT_TIMESTAMP() AS load_timestamp
-FROM l2_2_spec_unified.fact_specification_limit f
-JOIN l2_2_spec_unified.dim_specification s       ON f.spec_key = s.spec_key
-JOIN l2_2_spec_unified.dim_specification_item i  ON f.spec_item_key = i.spec_item_key
-JOIN l2_2_spec_unified.dim_limit_type lt         ON f.limit_type_key = lt.limit_type_key
-LEFT JOIN l2_2_spec_unified.dim_product p        ON s.product_key = p.product_key
-LEFT JOIN l2_2_spec_unified.dim_material m       ON s.material_key = m.material_key
-LEFT JOIN l2_2_spec_unified.dim_uom u            ON i.uom_key = u.uom_key
+FROM l2_2_unified_model.fact_specification_limit f
+JOIN l2_2_unified_model.dim_specification s       ON f.spec_key = s.spec_key
+JOIN l2_2_unified_model.dim_specification_item i  ON f.spec_item_key = i.spec_item_key
+JOIN l2_2_unified_model.dim_limit_type lt         ON f.limit_type_key = lt.limit_type_key
+LEFT JOIN l2_2_unified_model.dim_product p        ON s.product_key = p.product_key
+LEFT JOIN l2_2_unified_model.dim_material m       ON s.material_key = m.material_key
+LEFT JOIN l2_2_unified_model.dim_uom u            ON i.uom_key = u.uom_key
 WHERE f.is_current = TRUE
   AND COALESCE(UPPER(TRIM(f.stage_code)), 'RELEASE') IN ('RELEASE', 'BOTH')
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
@@ -254,9 +254,9 @@ GROUP BY
 -- COMMAND ----------
 
 -- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (filter null test_name)
-TRUNCATE TABLE l3_spec_products.obt_stability_results;
+TRUNCATE TABLE l3_data_product.obt_stability_results;
 
-INSERT INTO l3_spec_products.obt_stability_results (
+INSERT INTO l3_data_product.obt_stability_results (
     obt_stab_key,
     batch_number,
     manufacturing_date,
@@ -333,7 +333,6 @@ SELECT
     i.test_category_name,
     i.criticality AS criticality_code,
     tm.test_method_name                 AS method_name,
-    tm.analytical_technique             AS technique,
     f.stability_study_id,
     sc.condition_code                   AS storage_condition_code,
     sc.condition_name                   AS storage_condition_name,
@@ -362,24 +361,24 @@ SELECT
     CAST(NULL AS DATE)                  AS pull_date,
     f.is_current,
     CURRENT_TIMESTAMP()                 AS load_timestamp
-FROM l2_2_spec_unified.fact_analytical_result f
-JOIN l2_2_spec_unified.dim_batch b                  ON f.batch_key = b.batch_key
-LEFT JOIN l2_2_spec_unified.dim_specification s     ON f.spec_key = s.spec_key
-LEFT JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
-LEFT JOIN l2_2_spec_unified.dim_product p           ON s.product_key = p.product_key
-LEFT JOIN l2_2_spec_unified.dim_material m          ON s.material_key = m.material_key
-LEFT JOIN l2_2_spec_unified.dim_site st             ON s.site_key = st.site_key
-LEFT JOIN l2_2_spec_unified.dim_test_method tm      ON i.test_method_key = tm.test_method_key
-LEFT JOIN l2_2_spec_unified.dim_stability_condition sc ON f.condition_key = sc.condition_key
-LEFT JOIN l2_2_spec_unified.dim_timepoint tp        ON f.timepoint_key = tp.timepoint_key
-LEFT JOIN l2_2_spec_unified.dim_uom u               ON f.uom_key = u.uom_key
-LEFT JOIN l2_2_spec_unified.dim_instrument inst     ON f.instrument_key = inst.instrument_key
-LEFT JOIN l2_2_spec_unified.dim_date dt             ON f.test_date_key = dt.date_key
+FROM l2_2_unified_model.fact_analytical_result f
+JOIN l2_2_unified_model.dim_batch b                  ON f.batch_key = b.batch_key
+LEFT JOIN l2_2_unified_model.dim_specification s     ON f.spec_key = s.spec_key
+LEFT JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+LEFT JOIN l2_2_unified_model.dim_product p           ON s.product_key = p.product_key
+LEFT JOIN l2_2_unified_model.dim_material m          ON s.material_key = m.material_key
+LEFT JOIN l2_2_unified_model.dim_site st             ON s.site_key = st.site_key
+LEFT JOIN l2_2_unified_model.dim_test_method tm      ON i.test_method_key = tm.test_method_key
+LEFT JOIN l2_2_unified_model.dim_stability_condition sc ON f.condition_key = sc.condition_key
+LEFT JOIN l2_2_unified_model.dim_timepoint tp        ON f.timepoint_key = tp.timepoint_key
+LEFT JOIN l2_2_unified_model.dim_uom u               ON f.uom_key = u.uom_key
+LEFT JOIN l2_2_unified_model.dim_instrument inst     ON f.instrument_key = inst.instrument_key
+LEFT JOIN l2_2_unified_model.dim_date dt             ON f.test_date_key = dt.date_key
 -- Join to get specification AC limits for the same spec item
 LEFT JOIN (
     SELECT spec_item_key, lower_limit_value, upper_limit_value
-    FROM l2_2_spec_unified.fact_specification_limit fsl
-    JOIN l2_2_spec_unified.dim_limit_type lt ON fsl.limit_type_key = lt.limit_type_key
+    FROM l2_2_unified_model.fact_specification_limit fsl
+    JOIN l2_2_unified_model.dim_limit_type lt ON fsl.limit_type_key = lt.limit_type_key
     WHERE lt.limit_type_code = 'AC'
       AND fsl.is_current = TRUE
       AND COALESCE(fsl.stage_code, 'RELEASE') = 'RELEASE'
@@ -395,8 +394,8 @@ WHERE i.test_name IS NOT NULL;
 
 -- COMMAND ----------
 
-SELECT 'obt_specification_ctd' AS table_name, COUNT(*) AS rows FROM l3_spec_products.obt_specification_ctd
+SELECT 'obt_specification_ctd' AS table_name, COUNT(*) AS rows FROM l3_data_product.obt_specification_ctd
 UNION ALL
-SELECT 'obt_acceptance_criteria', COUNT(*) FROM l3_spec_products.obt_acceptance_criteria
+SELECT 'obt_acceptance_criteria', COUNT(*) FROM l3_data_product.obt_acceptance_criteria
 UNION ALL
-SELECT 'obt_stability_results', COUNT(*) FROM l3_spec_products.obt_stability_results;
+SELECT 'obt_stability_results', COUNT(*) FROM l3_data_product.obt_stability_results;

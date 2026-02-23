@@ -95,9 +95,9 @@ DDL_EXECUTION_ORDER = [
 
 # Schema names per layer
 L1_SCHEMA   = "l1_raw"
-L2_1_SCHEMA = "l2_1_lims"
-L2_2_SCHEMA = "l2_2_spec_unified"
-L3_SCHEMA   = "l3_spec_products"
+L2_1_SCHEMA = "l2_1_scl"
+L2_2_SCHEMA = "l2_2_unified_model"
+L3_SCHEMA   = "l3_data_product"
 
 # Inline bootstrap statements (run before any DDL files)
 BOOTSTRAP_STATEMENTS = {

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : obt_specification_ctd
--- Schema : l3_spec_products
+-- Schema : l3_data_product
 -- Layer  : L3 — Final Data Product Layer
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per specification item per stability time point
@@ -33,12 +33,12 @@
 --
 --          Refresh strategy: Full overwrite on each ETL cycle
 --          Partition: spec_type_code, stage_code
---          Source: l2_2_spec_unified.dspec_specification
+--          Source: l2_2_unified_model.dspec_specification
 -- CTD    : Directly maps to 3.2.S.4.1 (DS) and 3.2.P.5.1 (DP) tables
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l3_spec_products.obt_specification_ctd
+CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
 (
     -- =========================================================================
     -- BLOCK 1: SPECIFICATION HEADER
@@ -196,14 +196,14 @@ TBLPROPERTIES (
     'quality.primary_consumer'          = 'CTD_regulatory_filing'
 );
 
--- OPTIMIZE l3_spec_products.obt_specification_ctd ZORDER BY (spec_number, test_name);
+-- OPTIMIZE l3_data_product.obt_specification_ctd ZORDER BY (spec_number, test_name);
 
 -- =============================================================================
 -- POPULATION QUERY — from L2.2 dspec_specification
 -- =============================================================================
 -- v2: added site, market, analyte_code, criticality, effective_start/end_date.
 --
--- INSERT OVERWRITE l3_spec_products.obt_specification_ctd
+-- INSERT OVERWRITE l3_data_product.obt_specification_ctd
 -- SELECT
 --     spec_key,
 --     spec_number,
@@ -306,7 +306,7 @@ TBLPROPERTIES (
 --     'LIMS'                     AS source_system_code,    -- replace with actual
 --     current_timestamp()        AS load_timestamp,
 --     '2.0.0'                    AS data_product_version
--- FROM l2_2_spec_unified.dspec_specification
+-- FROM l2_2_unified_model.dspec_specification
 -- WHERE status_code = 'APP'
 --   AND is_current = TRUE
 --   AND ac_is_in_filing = TRUE;

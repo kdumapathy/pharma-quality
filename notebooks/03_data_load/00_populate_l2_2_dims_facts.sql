@@ -16,7 +16,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-USE SCHEMA l2_2_spec_unified;
+USE SCHEMA l2_2_unified_model;
 
 -- COMMAND ----------
 
@@ -50,11 +50,11 @@ USING (
     FROM (
         SELECT HASH(s.product_id_lims) AS product_key, s.product_id_lims AS product_id,
             s.product_name, s.dosage_form, s.strength, s.effective_start_date AS effective_from, 1 AS src_priority
-        FROM l2_1_lims.src_lims_specification s WHERE s.is_current = TRUE AND s.product_id_lims IS NOT NULL
+        FROM l2_1_scl.src_lims_specification s WHERE s.is_current = TRUE AND s.product_id_lims IS NOT NULL
         UNION ALL
         SELECT HASH(p.product_id_pdf) AS product_key, p.product_id_pdf AS product_id,
             p.product_name, CAST(NULL AS STRING) AS dosage_form, CAST(NULL AS STRING) AS strength, p.effective_date AS effective_from, 2 AS src_priority
-        FROM l2_1_lims.src_pdf_specification p WHERE p.is_current = TRUE AND p.product_id_pdf IS NOT NULL
+        FROM l2_1_scl.src_pdf_specification p WHERE p.is_current = TRUE AND p.product_id_pdf IS NOT NULL
     )
 ) AS src
 ON tgt.product_id = src.product_id
@@ -98,11 +98,11 @@ USING (
     FROM (
         SELECT HASH(s.material_id_lims) AS material_key, s.material_id_lims AS material_id,
             s.material_name, s.effective_start_date AS effective_from, 1 AS src_priority
-        FROM l2_1_lims.src_lims_specification s WHERE s.is_current = TRUE AND s.material_id_lims IS NOT NULL
+        FROM l2_1_scl.src_lims_specification s WHERE s.is_current = TRUE AND s.material_id_lims IS NOT NULL
         UNION ALL
         SELECT HASH(p.material_id_pdf) AS material_key, p.material_id_pdf AS material_id,
             p.material_name, p.effective_date AS effective_from, 2 AS src_priority
-        FROM l2_1_lims.src_pdf_specification p WHERE p.is_current = TRUE AND p.material_id_pdf IS NOT NULL
+        FROM l2_1_scl.src_pdf_specification p WHERE p.is_current = TRUE AND p.material_id_pdf IS NOT NULL
     )
 ) AS src
 ON tgt.material_id = src.material_id
@@ -141,7 +141,7 @@ USING (
         CAST(NULL AS STRING)                AS source_system_id,
         CURRENT_TIMESTAMP()                 AS load_timestamp,
         TRUE                                AS is_current
-    FROM l2_1_lims.src_lims_spec_item i
+    FROM l2_1_scl.src_lims_spec_item i
     WHERE i.is_current = TRUE AND i.test_method_id_lims IS NOT NULL
 ) AS src
 ON tgt.test_method_id = src.test_method_id
@@ -196,7 +196,7 @@ USING (
         CAST(NULL AS STRING)                AS source_system_id,
         CURRENT_TIMESTAMP()                 AS load_timestamp,
         TRUE                                AS is_current
-    FROM l2_1_lims.src_lims_specification s
+    FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE AND s.site_id_lims IS NOT NULL
 ) AS src
 ON tgt.site_id = src.site_id
@@ -236,7 +236,7 @@ USING (
         CAST(NULL AS STRING)                AS source_system_id,
         CURRENT_TIMESTAMP()                 AS load_timestamp,
         TRUE                                AS is_current
-    FROM l2_1_lims.src_lims_specification s
+    FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE AND s.market_region IS NOT NULL
 ) AS src
 ON tgt.market_id = src.market_id
@@ -294,7 +294,7 @@ USING (
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
         CAST(NULL AS TIMESTAMP) AS valid_to
-    FROM l2_1_lims.src_lims_specification s
+    FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE
 
     UNION ALL
@@ -321,7 +321,7 @@ USING (
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current, CURRENT_TIMESTAMP() AS valid_from,
         CAST(NULL AS TIMESTAMP) AS valid_to
-    FROM l2_1_lims.src_pdf_specification p
+    FROM l2_1_scl.src_pdf_specification p
     WHERE p.is_current = TRUE
     QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number ORDER BY p.source_ingestion_timestamp DESC) = 1
     )
@@ -425,7 +425,7 @@ USING (
         i.source_spec_item_id AS source_system_id,
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current
-    FROM l2_1_lims.src_lims_spec_item i
+    FROM l2_1_scl.src_lims_spec_item i
     WHERE i.is_current = TRUE
 
     UNION ALL
@@ -446,7 +446,7 @@ USING (
         CONCAT('PDF:', p.source_document_id, ':', p.test_code) AS source_system_id,
         CURRENT_TIMESTAMP() AS load_timestamp,
         TRUE AS is_current
-    FROM l2_1_lims.src_pdf_specification p
+    FROM l2_1_scl.src_pdf_specification p
     WHERE p.is_current = TRUE
     QUALIFY ROW_NUMBER() OVER (PARTITION BY p.spec_number, p.test_code ORDER BY p.source_ingestion_timestamp DESC) = 1
     )
@@ -454,7 +454,7 @@ USING (
         src.spec_item_id,
         ds.spec_key,
         dtm.test_method_key,
-        du.uom_key,
+        COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
         src.test_code,
         src.test_name,
         src.test_description,
@@ -478,6 +478,7 @@ USING (
     LEFT JOIN dim_specification ds ON ds.spec_id = src.source_specification_id
     LEFT JOIN dim_test_method dtm ON dtm.test_method_id = src.test_method_id
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
+    LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
 ON tgt.spec_item_id = src.spec_item_id
 WHEN MATCHED THEN UPDATE SET
@@ -550,7 +551,7 @@ USING (
         l.source_limit_id AS source_system_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
-    FROM l2_1_lims.src_lims_spec_limit l
+    FROM l2_1_scl.src_lims_spec_limit l
     WHERE l.is_current = TRUE
 
     UNION ALL
@@ -591,7 +592,7 @@ USING (
         r.source_recipe_id AS source_system_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
-    FROM l2_1_lims.src_process_recipe r
+    FROM l2_1_scl.src_process_recipe r
     WHERE r.is_current = TRUE
 
     UNION ALL
@@ -624,14 +625,14 @@ USING (
         p.source_row_key AS source_system_id,
         TRUE                                AS is_current,
         CURRENT_TIMESTAMP()                 AS load_timestamp
-    FROM l2_1_lims.src_pdf_specification p
+    FROM l2_1_scl.src_pdf_specification p
     WHERE p.is_current = TRUE
     )
     SELECT
         ds.spec_key,
         dsi.spec_item_key,
         dlt.limit_type_key,
-        du.uom_key,
+        COALESCE(du.uom_key, du_default.uom_key) AS uom_key,
         src.effective_date,
         src.effective_end_date,
         src.lower_limit_value,
@@ -659,6 +660,7 @@ USING (
     JOIN dim_specification_item dsi ON dsi.spec_item_id = src.source_spec_item_id
     JOIN dim_limit_type dlt ON dlt.limit_type_code = src.limit_type_code
     LEFT JOIN dim_uom du ON du.uom_code = src.uom_code
+    LEFT JOIN dim_uom du_default ON du_default.uom_code = 'N/A'
 ) AS src
 ON tgt.source_system_code = src.source_system_code
 AND tgt.source_system_id = src.source_system_id
@@ -720,7 +722,7 @@ USING (
             CAST(NULL AS STRING) AS batch_status,
             TRUE AS is_active,
             CURRENT_TIMESTAMP() AS load_timestamp
-        FROM l2_1_lims.src_vendor_analytical_results v
+        FROM l2_1_scl.src_vendor_analytical_results v
         WHERE v.is_current = TRUE AND v.batch_number IS NOT NULL
         QUALIFY ROW_NUMBER() OVER (PARTITION BY v.batch_number ORDER BY v.source_ingestion_timestamp DESC) = 1
     )
@@ -768,7 +770,7 @@ USING (
         CAST(NULL AS STRING)                AS instrument_type,
         TRUE                                AS is_active,
         CURRENT_TIMESTAMP()                 AS load_timestamp
-    FROM l2_1_lims.src_vendor_analytical_results v
+    FROM l2_1_scl.src_vendor_analytical_results v
     WHERE v.is_current = TRUE AND v.instrument_id_vendor IS NOT NULL
     QUALIFY ROW_NUMBER() OVER (PARTITION BY v.instrument_id_vendor ORDER BY v.source_ingestion_timestamp DESC) = 1
 ) AS src
@@ -829,7 +831,7 @@ USING (
             TRUE AS is_current,
             CURRENT_TIMESTAMP() AS load_timestamp
 
-        FROM l2_1_lims.src_vendor_analytical_results v
+        FROM l2_1_scl.src_vendor_analytical_results v
         WHERE v.is_current = TRUE
     )
     SELECT

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_uom
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per unit of measure
@@ -9,7 +9,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_uom
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_uom
 (
     uom_key                     BIGINT          NOT NULL    GENERATED ALWAYS AS IDENTITY
                                                             COMMENT 'Surrogate primary key',
@@ -49,7 +49,7 @@ TBLPROPERTIES (
 -- SEED DATA — Common Pharmaceutical Units of Measure
 -- =============================================================================
 
-INSERT INTO l2_2_spec_unified.dim_uom
+INSERT INTO l2_2_unified_model.dim_uom
     (uom_code, uom_name, uom_category, si_conversion_factor, si_uom_code, load_timestamp)
 VALUES
     -- Ratio / Dimensionless (%)

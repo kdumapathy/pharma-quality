@@ -165,10 +165,10 @@ INSERT INTO l1_raw.raw_lims_spec_limit VALUES (
 --       Databricks GENERATED ALWAYS AS IDENTITY does not support DEFAULT keyword.
 -- =============================================================================
 
-USE SCHEMA l2_2_spec_unified;
+USE SCHEMA l2_2_unified_model;
 
 -- Sites (dim_site: site_key is identity — excluded from column list)
-INSERT INTO l2_2_spec_unified.dim_site
+INSERT INTO l2_2_unified_model.dim_site
     (site_id, site_code, site_name, site_type,
      address_line, city, state_province, country_code, country_name,
      regulatory_region, gmp_status, gmp_status_date,
@@ -180,7 +180,7 @@ VALUES
      'FDA', 'APPROVED', '2023-08-01', '2022-11-15', 'VAI',
      'MDM', 'SITE-NJ01', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_site
+INSERT INTO l2_2_unified_model.dim_site
     (site_id, site_code, site_name, site_type,
      address_line, city, state_province, country_code, country_name,
      regulatory_region, gmp_status, gmp_status_date,
@@ -193,7 +193,7 @@ VALUES
      'MDM', 'SITE-IN01', current_timestamp(), TRUE);
 
 -- Market (dim_market: market_key is identity)
-INSERT INTO l2_2_spec_unified.dim_market
+INSERT INTO l2_2_unified_model.dim_market
     (market_id, country_code, country_name, region_code, region_name,
      regulatory_body, market_status, marketing_auth_number,
      marketing_auth_date, marketing_auth_expiry_date, primary_pharmacopoeia,
@@ -204,7 +204,7 @@ VALUES
      'MDM', 'MKT-US-001', current_timestamp(), TRUE);
 
 -- Product (dim_product: product_key is identity)
-INSERT INTO l2_2_spec_unified.dim_product
+INSERT INTO l2_2_unified_model.dim_product
     (product_id, product_code, product_name, inn_name, brand_name,
      dosage_form_code, dosage_form_name, route_of_administration,
      strength, strength_value, strength_uom,
@@ -218,7 +218,7 @@ VALUES
      'MDM', current_timestamp(), TRUE);
 
 -- Material (dim_material: material_key is identity)
-INSERT INTO l2_2_spec_unified.dim_material
+INSERT INTO l2_2_unified_model.dim_material
     (material_id, material_code, material_name,
      material_type_code, material_type_name,
      cas_number, molecular_formula, molecular_weight,
@@ -233,7 +233,7 @@ VALUES
      'MDM', current_timestamp(), TRUE);
 
 -- Test Methods (dim_test_method: test_method_key is identity)
-INSERT INTO l2_2_spec_unified.dim_test_method
+INSERT INTO l2_2_unified_model.dim_test_method
     (test_method_id, test_method_number, test_method_name, test_method_version,
      method_type_code, method_type_name, analytical_technique, instrument_type,
      compendia_reference, validation_status, validation_date,
@@ -244,7 +244,7 @@ VALUES
      'USP <621>', 'VALIDATED', '2022-06-15',
      'LIMS', 'TM-HPLC-ATV-001', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_test_method
+INSERT INTO l2_2_unified_model.dim_test_method
     (test_method_id, test_method_number, test_method_name, test_method_version,
      method_type_code, method_type_name, analytical_technique, instrument_type,
      compendia_reference, validation_status, validation_date,
@@ -255,7 +255,7 @@ VALUES
      NULL, 'WAIVED', NULL,
      'LIMS', 'TM-VIS-001', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_test_method
+INSERT INTO l2_2_unified_model.dim_test_method
     (test_method_id, test_method_number, test_method_name, test_method_version,
      method_type_code, method_type_name, analytical_technique, instrument_type,
      compendia_reference, validation_status, validation_date,
@@ -266,7 +266,7 @@ VALUES
      'USP <621>', 'VALIDATED', '2022-09-01',
      'LIMS', 'TM-HPLC-IMP-001', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_test_method
+INSERT INTO l2_2_unified_model.dim_test_method
     (test_method_id, test_method_number, test_method_name, test_method_version,
      method_type_code, method_type_name, analytical_technique, instrument_type,
      compendia_reference, validation_status, validation_date,
@@ -289,7 +289,7 @@ VALUES
 
 -- dim_specification: Drug Product (DP)
 -- regulatory_context_key 1 = US-NDA (first row in dim_regulatory_context seed)
-INSERT INTO l2_2_spec_unified.dim_specification
+INSERT INTO l2_2_unified_model.dim_specification
     (spec_id, spec_number, spec_version, spec_title,
      spec_type_code, spec_type_name,
      product_key, material_key, site_key, market_key, regulatory_context_key,
@@ -312,7 +312,7 @@ VALUES
      current_timestamp(), TRUE, current_timestamp(), NULL);
 
 -- dim_specification: Drug Substance (DS)
-INSERT INTO l2_2_spec_unified.dim_specification
+INSERT INTO l2_2_unified_model.dim_specification
     (spec_id, spec_number, spec_version, spec_title,
      spec_type_code, spec_type_name,
      product_key, material_key, site_key, market_key, regulatory_context_key,
@@ -338,7 +338,7 @@ VALUES
 -- test_method_key: 1=HPLC-ATV, 2=Visual, 3=HPLC-IMP, 4=Dissolution
 -- uom_key: 1=% (Percent), NULL=no unit
 
-INSERT INTO l2_2_spec_unified.dim_specification_item
+INSERT INTO l2_2_unified_model.dim_specification_item
     (spec_item_id, spec_key, test_method_key, uom_key,
      test_code, test_name, test_description,
      test_category_code, test_category_name, test_subcategory,
@@ -355,7 +355,7 @@ VALUES
      NULL, TRUE, 'RELEASE',
      'LIMS', 'ITEM-001', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_specification_item
+INSERT INTO l2_2_unified_model.dim_specification_item
     (spec_item_id, spec_key, test_method_key, uom_key,
      test_code, test_name, test_description,
      test_category_code, test_category_name, test_subcategory,
@@ -372,7 +372,7 @@ VALUES
      NULL, TRUE, 'RELEASE',
      'LIMS', 'ITEM-002', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_specification_item
+INSERT INTO l2_2_unified_model.dim_specification_item
     (spec_item_id, spec_key, test_method_key, uom_key,
      test_code, test_name, test_description,
      test_category_code, test_category_name, test_subcategory,
@@ -389,7 +389,7 @@ VALUES
      NULL, TRUE, 'BOTH',
      'LIMS', 'ITEM-003', current_timestamp(), TRUE);
 
-INSERT INTO l2_2_spec_unified.dim_specification_item
+INSERT INTO l2_2_unified_model.dim_specification_item
     (spec_item_id, spec_key, test_method_key, uom_key,
      test_code, test_name, test_description,
      test_category_code, test_category_name, test_subcategory,
@@ -412,7 +412,7 @@ VALUES
 -- spec_item_key: 1=Assay, 2=Appearance, 3=ImpA, 4=Dissolution
 
 -- Assay — Acceptance Criteria (is_in_filing=TRUE, regulatory_basis=ICH Q6A)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -438,7 +438,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Assay — Normal Operating Range (is_in_filing=FALSE — internal range)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -464,7 +464,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Assay — Proven Acceptable Range (is_in_filing=TRUE, regulatory_basis=ICH Q8)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -490,7 +490,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Assay — Alert Limit (SPC-derived: 3-sigma, n=120; is_in_filing=FALSE)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -516,7 +516,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Appearance — Acceptance Criteria (Pass/Fail; no uom; is_in_filing=TRUE)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -544,7 +544,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Impurity A — Acceptance Criteria (NMT 0.10%; is_in_filing=TRUE)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -570,7 +570,7 @@ VALUES
      current_timestamp(), TRUE);
 
 -- Dissolution — Acceptance Criteria (Q=NLT 75% in 30 min; is_in_filing=TRUE)
-INSERT INTO l2_2_spec_unified.fact_specification_limit
+INSERT INTO l2_2_unified_model.fact_specification_limit
     (spec_key, spec_item_key, limit_type_key, uom_key,
      lower_limit_value, upper_limit_value, target_value,
      lower_limit_operator, upper_limit_operator,
@@ -606,15 +606,15 @@ SELECT 'L1 raw_lims_spec_item',      COUNT(*) FROM l1_raw.raw_lims_spec_item
 UNION ALL
 SELECT 'L1 raw_lims_spec_limit',     COUNT(*) FROM l1_raw.raw_lims_spec_limit
 UNION ALL
-SELECT 'L2.2 dim_specification',     COUNT(*) FROM l2_2_spec_unified.dim_specification
+SELECT 'L2.2 dim_specification',     COUNT(*) FROM l2_2_unified_model.dim_specification
 UNION ALL
-SELECT 'L2.2 dim_specification_item',COUNT(*) FROM l2_2_spec_unified.dim_specification_item
+SELECT 'L2.2 dim_specification_item',COUNT(*) FROM l2_2_unified_model.dim_specification_item
 UNION ALL
-SELECT 'L2.2 fact_specification_limit',COUNT(*) FROM l2_2_spec_unified.fact_specification_limit
+SELECT 'L2.2 fact_specification_limit',COUNT(*) FROM l2_2_unified_model.fact_specification_limit
 UNION ALL
-SELECT 'L2.2 dim_site',              COUNT(*) FROM l2_2_spec_unified.dim_site
+SELECT 'L2.2 dim_site',              COUNT(*) FROM l2_2_unified_model.dim_site
 UNION ALL
-SELECT 'L2.2 dim_market',            COUNT(*) FROM l2_2_spec_unified.dim_market;
+SELECT 'L2.2 dim_market',            COUNT(*) FROM l2_2_unified_model.dim_market;
 
 -- V2: Star schema join — spec + items + AC limits (simulates CTD table)
 SELECT
@@ -645,18 +645,18 @@ SELECT
     f.calculation_method,                           -- NEW from ref ERD (SPC)
     f.sample_size,                                  -- NEW from ref ERD (SPC)
     u.uom_code
-FROM l2_2_spec_unified.dim_specification s
-JOIN l2_2_spec_unified.dim_specification_item i
+FROM l2_2_unified_model.dim_specification s
+JOIN l2_2_unified_model.dim_specification_item i
     ON s.spec_key = i.spec_key AND i.is_current = TRUE
-JOIN l2_2_spec_unified.fact_specification_limit f
+JOIN l2_2_unified_model.fact_specification_limit f
     ON i.spec_item_key = f.spec_item_key AND f.is_current = TRUE
-JOIN l2_2_spec_unified.dim_limit_type lt
+JOIN l2_2_unified_model.dim_limit_type lt
     ON f.limit_type_key = lt.limit_type_key
-LEFT JOIN l2_2_spec_unified.dim_site st
+LEFT JOIN l2_2_unified_model.dim_site st
     ON s.site_key = st.site_key AND st.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_market mk
+LEFT JOIN l2_2_unified_model.dim_market mk
     ON s.market_key = mk.market_key AND mk.is_current = TRUE
-LEFT JOIN l2_2_spec_unified.dim_uom u
+LEFT JOIN l2_2_unified_model.dim_uom u
     ON f.uom_key = u.uom_key
 WHERE s.is_current = TRUE
   AND s.spec_type_code = 'DP'
@@ -688,8 +688,8 @@ SELECT
         MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) >=
         MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END)
     THEN 'PASS' ELSE 'FAIL' END AS hierarchy_check
-FROM l2_2_spec_unified.fact_specification_limit f
-JOIN l2_2_spec_unified.dim_specification_item i ON f.spec_item_key = i.spec_item_key
-JOIN l2_2_spec_unified.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
+FROM l2_2_unified_model.fact_specification_limit f
+JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
+JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
 WHERE f.is_current = TRUE AND f.stage_code = 'RELEASE'
 GROUP BY i.spec_item_key, i.test_name, i.criticality;

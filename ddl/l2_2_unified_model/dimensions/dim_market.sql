@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_market
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model
 -- Source : specification_data_model_30-jan.html → MARKET entity
 -- Grain  : One row per market / country (MDM-mastered)
@@ -15,7 +15,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_market
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_market
 (
     -- -------------------------------------------------------------------------
     -- Keys

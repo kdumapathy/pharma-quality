@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Table  : dim_limit_type
--- Schema : l2_2_spec_unified
+-- Schema : l2_2_unified_model
 -- Layer  : L2.2 — Unified Data Model (Business Conform Layer)
 -- Domain : Pharmaceutical Quality — Specifications
 -- Grain  : One row per limit type (static reference / lookup table)
@@ -11,7 +11,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_spec_unified.dim_limit_type
+CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_limit_type
 (
     -- -------------------------------------------------------------------------
     -- Keys
@@ -77,7 +77,7 @@ TBLPROPERTIES (
 -- These are static business reference values, inserted once.
 -- =============================================================================
 
-INSERT INTO l2_2_spec_unified.dim_limit_type
+INSERT INTO l2_2_unified_model.dim_limit_type
     (limit_type_code, limit_type_name, limit_type_description,
      hierarchy_level, limit_category, is_regulatory, sort_order, load_timestamp)
 VALUES

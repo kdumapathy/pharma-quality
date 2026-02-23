@@ -17,7 +17,7 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
-USE SCHEMA l2_1_lims;
+USE SCHEMA l2_1_scl;
 
 -- COMMAND ----------
 
@@ -27,7 +27,7 @@ USE SCHEMA l2_1_lims;
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_lims_specification
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_lims_specification
 (
     source_specification_id     STRING          NOT NULL    COMMENT 'LIMS natural key (from raw layer)',
     source_batch_id             STRING          NOT NULL    COMMENT 'ETL batch ID of latest ingest',
@@ -86,7 +86,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_lims_spec_item
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_lims_spec_item
 (
     source_spec_item_id         STRING          NOT NULL    COMMENT 'LIMS spec item natural key',
     source_specification_id     STRING          NOT NULL    COMMENT 'LIMS parent spec ID',
@@ -136,7 +136,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_lims_spec_limit
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_lims_spec_limit
 (
     source_limit_id             STRING          NOT NULL    COMMENT 'LIMS limit natural key',
     source_spec_item_id         STRING          NOT NULL    COMMENT 'LIMS parent spec item ID',
@@ -191,7 +191,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_process_recipe
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_process_recipe
 (
     source_recipe_id            STRING          NOT NULL    COMMENT 'Recipe system natural key',
     source_specification_id     STRING                      COMMENT 'Linked LIMS specification ID',
@@ -257,7 +257,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_pdf_specification
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_pdf_specification
 (
     -- Source identity
     source_document_id          STRING          NOT NULL    COMMENT 'Document natural key',
@@ -347,7 +347,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l2_1_lims.src_vendor_analytical_results
+CREATE TABLE IF NOT EXISTS l2_1_scl.src_vendor_analytical_results
 (
     -- Source identity
     source_result_id            STRING          NOT NULL    COMMENT 'Vendor result natural key',
@@ -453,4 +453,4 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-SHOW TABLES IN l2_1_lims;
+SHOW TABLES IN l2_1_scl;
