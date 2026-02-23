@@ -62,15 +62,16 @@ USING (
         ('kp',       'Kilopond (hardness)',         'OTHER',         CAST(9.80665 AS DECIMAL(18,10)),        'N'),
         ('mg/tab',   'Milligrams per tablet',       'MASS',          CAST(NULL AS DECIMAL(18,10)),           CAST(NULL AS STRING)),
         ('% (Q)',    'Percent dissolved (Q value)',  'RATIO',         CAST(0.01 AS DECIMAL(18,10)),           CAST(NULL AS STRING))
-) src
-ON tgt.uom_code = src.col1
+) src (uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit)
+ON tgt.uom_code = src.uom_code
 WHEN MATCHED THEN UPDATE SET
-  tgt.uom_name = src.col2,
-  tgt.uom_category = src.col3,
-  tgt.si_conversion_factor = src.col4,
-  tgt.si_uom_code = src.col5
-WHEN NOT MATCHED THEN INSERT (uom_code, uom_name, uom_category, si_conversion_factor, si_uom_code, load_timestamp)
-VALUES (src.col1, src.col2, src.col3, src.col4, src.col5, CURRENT_TIMESTAMP);
+  tgt.uom_name = src.uom_name,
+  tgt.uom_category = src.uom_category,
+  tgt.si_conversion_factor = src.si_conversion_factor,
+  tgt.si_base_unit = src.si_base_unit,
+  tgt.is_active = TRUE
+WHEN NOT MATCHED THEN INSERT (uom_code, uom_name, uom_category, si_conversion_factor, si_base_unit, is_active)
+VALUES (src.uom_code, src.uom_name, src.uom_category, src.si_conversion_factor, src.si_base_unit, TRUE);
 
 -- COMMAND ----------
 
