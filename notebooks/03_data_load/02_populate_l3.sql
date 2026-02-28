@@ -16,8 +16,12 @@ USE CATALOG pharma_quality;
 
 -- COMMAND ----------
 
--- DBTITLE 1,TRUNCATE and LOAD obt_specification_ctd
 TRUNCATE TABLE l3_data_product.obt_specification_ctd;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,TRUNCATE and LOAD obt_specification_ctd
+
 
 INSERT INTO l3_data_product.obt_specification_ctd (
     spec_key,
@@ -126,8 +130,8 @@ LEFT JOIN l2_2_unified_model.dim_site st          ON s.site_key = st.site_key
 LEFT JOIN l2_2_unified_model.dim_market mk        ON s.market_key = mk.market_key
 LEFT JOIN l2_2_unified_model.dim_test_method tm   ON i.test_method_key = tm.test_method_key
 LEFT JOIN l2_2_unified_model.dim_uom u            ON f.uom_key = u.uom_key
-LEFT JOIN l2_2_unified_model.dim_date ds          ON f.effective_date = ds.full_date
-LEFT JOIN l2_2_unified_model.dim_date de          ON f.effective_end_date = de.full_date
+LEFT JOIN l2_2_unified_model.dim_date ds          ON f.effective_start_date_key = ds.date_key
+LEFT JOIN l2_2_unified_model.dim_date de          ON f.effective_end_date_key = de.date_key
 LEFT JOIN l2_2_unified_model.dim_date da          ON s.approval_date = da.full_date
 WHERE f.is_current = TRUE
 
@@ -138,29 +142,39 @@ WHERE f.is_current = TRUE
 
 -- COMMAND ----------
 
--- DBTITLE 1,LOAD obt_acceptance_criteria
 TRUNCATE TABLE l3_data_product.obt_acceptance_criteria;
 
+-- COMMAND ----------
+
+-- DBTITLE 1,LOAD obt_acceptance_criteria (fixed)
 INSERT INTO l3_data_product.obt_acceptance_criteria (
+    obt_ac_key,
     spec_number,
     spec_version,
     spec_type_code,
+    status_code,
     stage_code,
     product_name,
     material_name,
-    dosage_form_name,
+    dosage_form,
     strength,
     test_name,
+    test_code,
     test_category_code,
     sequence_number,
+    reporting_type,
+    is_required,
     ac_lower_limit,
     ac_upper_limit,
+    ac_target_value,
     ac_width,
     nor_lower_limit,
     nor_upper_limit,
+    nor_target_value,
     nor_width,
     par_lower_limit,
     par_upper_limit,
+    par_target_value,
     par_width,
     nor_tightness_pct,
     par_vs_ac_factor,
@@ -168,27 +182,35 @@ INSERT INTO l3_data_product.obt_acceptance_criteria (
     load_timestamp
 )
 SELECT
+    HASH(s.spec_number, s.spec_version, s.spec_type_code, s.stage_code, p.product_name, m.material_name, p.dosage_form, p.strength, COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'), i.test_category_code, i.sequence_number) AS obt_ac_key,
     s.spec_number,
     s.spec_version,
     s.spec_type_code,
+    s.status_code,
     s.stage_code,
     p.product_name,
     m.material_name,
-    p.dosage_form_name,
+    p.dosage_form,
     p.strength,
     COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
+    i.test_code,
     i.test_category_code,
     i.sequence_number,
+    NULL AS reporting_type,
+    NULL AS is_required,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.lower_limit_value END) AS ac_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) AS ac_upper_limit,
+    NULL AS ac_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'AC' THEN f.lower_limit_value END) AS ac_width,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.lower_limit_value END) AS nor_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) AS nor_upper_limit,
+    NULL AS nor_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.lower_limit_value END) AS nor_width,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.lower_limit_value END) AS par_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.upper_limit_value END) AS par_upper_limit,
+    NULL AS par_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.lower_limit_value END) AS par_width,
     CASE WHEN (MAX(CASE WHEN lt.limit_type_code = 'AC' THEN f.upper_limit_value END) -
@@ -238,12 +260,10 @@ WHERE f.is_current = TRUE
   AND COALESCE(UPPER(TRIM(f.stage_code)), 'RELEASE') IN ('RELEASE', 'BOTH')
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
 GROUP BY
-    s.spec_number, s.spec_version, s.spec_type_code, s.stage_code,
-    p.product_name, m.material_name, p.dosage_form_name, p.strength,
+    s.spec_number, s.spec_version, s.spec_type_code, s.status_code, s.stage_code,
+    p.product_name, m.material_name, p.dosage_form, p.strength,
     COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'),
-    i.test_category_code,
-    i.sequence_number
-;
+    i.test_code, i.test_category_code, i.sequence_number;
 
 -- COMMAND ----------
 
@@ -253,8 +273,12 @@ GROUP BY
 
 -- COMMAND ----------
 
--- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (filter null test_name)
 TRUNCATE TABLE l3_data_product.obt_stability_results;
+
+-- COMMAND ----------
+
+-- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (filter null test_name)
+
 
 INSERT INTO l3_data_product.obt_stability_results (
     obt_stab_key,
