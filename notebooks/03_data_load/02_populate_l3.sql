@@ -4,6 +4,9 @@
 -- MAGIC Builds the L3 One Big Tables from L2.2 star schema:
 -- MAGIC - `obt_specification_ctd` — CTD-ready output (grain: spec × item × limit)
 -- MAGIC - `obt_acceptance_criteria` — Acceptance criteria with hierarchy metrics (grain: spec × item)
+-- MAGIC - `obt_stability_results` — Stability analytical results (grain: batch × test × condition × time point)
+-- MAGIC
+-- MAGIC Aligned with PQ/CMC field naming conventions and ICH Q6A/Q1A standards.
 
 -- COMMAND ----------
 
@@ -24,23 +27,23 @@ TRUNCATE TABLE l3_data_product.obt_specification_ctd;
 
 
 INSERT INTO l3_data_product.obt_specification_ctd (
+    obt_ctd_key,
     spec_key,
-    sequence_number,
     spec_number,
     spec_version,
     spec_title,
     spec_type_code,
     spec_type_name,
-    stage_name,
     status_code,
     stage_code,
+    stage_name,
     product_name,
-    dosage_form_code,
-    dosage_form_name,
-    strength,
     inn_name,
     brand_name,
+    dosage_form_code,
+    dosage_form_name,
     route_of_administration,
+    strength,
     nda_number,
     material_name,
     material_type_code,
@@ -52,74 +55,102 @@ INSERT INTO l3_data_product.obt_specification_ctd (
     market_country_code,
     market_country_name,
     market_status,
-    compendia_reference,
     test_name,
     test_code,
     test_category_code,
     test_category_name,
     criticality,
+    sequence_number,
     is_required,
     reporting_type,
+    compendia_reference,
+    compendia_test_ref,
     test_method_name,
     test_method_number,
-    compendia_test_ref,
+    limit_type_code,
+    limit_type_name,
+    lower_limit_value,
+    upper_limit_value,
+    target_value,
+    limit_description,
+    limit_text,
+    uom_code,
+    uom_name,
+    limit_basis,
     stability_time_point,
     stability_condition,
     ctd_section,
+    is_in_filing,
+    regulatory_basis,
     effective_start_date,
     effective_end_date,
     approval_date,
     approver_name,
+    is_current,
     load_timestamp
 )
 SELECT
+    HASH(f.spec_limit_key)                  AS obt_ctd_key,
     f.spec_key,
-    i.sequence_number,
     s.spec_number,
     s.spec_version,
     s.spec_title,
     s.spec_type_code,
     s.spec_type_name,
-    s.stage_name,
     s.status_code,
     s.stage_code,
+    s.stage_name,
     p.product_name,
-    p.dosage_form_code,
-    p.dosage_form_name,
-    p.strength,
     p.inn_name,
     p.brand_name,
+    p.dosage_form_code,
+    p.dosage_form_name,
     p.route_of_administration,
+    p.strength,
     p.nda_number,
     m.material_name,
     m.material_type_code,
     m.cas_number,
     st.site_code,
     st.site_name,
-    st.regulatory_region AS site_regulatory_region,
+    st.regulatory_region                    AS site_regulatory_region,
     mk.region_code,
-    mk.country_code AS market_country_code,
-    mk.country_name AS market_country_name,
+    mk.country_code                         AS market_country_code,
+    mk.country_name                         AS market_country_name,
     mk.market_status,
-    s.compendia_reference,
     COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
     i.test_category_name,
     i.criticality,
+    i.sequence_number,
     i.is_required,
     i.reporting_type,
+    s.compendia_reference,
+    i.compendia_test_ref,
     tm.test_method_name,
     tm.test_method_number,
-    i.compendia_test_ref,
+    lt.limit_type_code,
+    lt.limit_type_name,
+    f.lower_limit_value,
+    f.upper_limit_value,
+    f.target_value,
+    f.limit_description,
+    f.limit_text,
+    u.uom_code,
+    u.uom_name,
+    f.limit_basis,
     f.stability_time_point,
     f.stability_condition,
     s.ctd_section,
-    ds.full_date AS effective_start_date,
-    de.full_date AS effective_end_date,
-    da.full_date AS approval_date,
+    f.is_in_filing,
+    f.regulatory_basis,
+    ds.full_date                            AS effective_start_date,
+    de.full_date                            AS effective_end_date,
+    s.approval_date,
     s.approver_name,
-    CURRENT_TIMESTAMP() AS load_timestamp
+    f.is_current,
+    CURRENT_TIMESTAMP()                     AS load_timestamp
 FROM l2_2_unified_model.fact_specification_limit f
 JOIN l2_2_unified_model.dim_specification s       ON f.spec_key = s.spec_key
 JOIN l2_2_unified_model.dim_specification_item i  ON f.spec_item_key = i.spec_item_key
@@ -132,7 +163,6 @@ LEFT JOIN l2_2_unified_model.dim_test_method tm   ON i.test_method_key = tm.test
 LEFT JOIN l2_2_unified_model.dim_uom u            ON f.uom_key = u.uom_key
 LEFT JOIN l2_2_unified_model.dim_date ds          ON f.effective_start_date_key = ds.date_key
 LEFT JOIN l2_2_unified_model.dim_date de          ON f.effective_end_date_key = de.date_key
-LEFT JOIN l2_2_unified_model.dim_date da          ON s.approval_date = da.full_date
 WHERE f.is_current = TRUE
 
 -- COMMAND ----------
@@ -146,7 +176,7 @@ TRUNCATE TABLE l3_data_product.obt_acceptance_criteria;
 
 -- COMMAND ----------
 
--- DBTITLE 1,LOAD obt_acceptance_criteria (fixed)
+-- DBTITLE 1,LOAD obt_acceptance_criteria (PQ/CMC aligned)
 INSERT INTO l3_data_product.obt_acceptance_criteria (
     obt_ac_key,
     spec_number,
@@ -161,6 +191,8 @@ INSERT INTO l3_data_product.obt_acceptance_criteria (
     test_name,
     test_code,
     test_category_code,
+    criticality,
+    uom_code,
     sequence_number,
     reporting_type,
     is_required,
@@ -179,10 +211,11 @@ INSERT INTO l3_data_product.obt_acceptance_criteria (
     nor_tightness_pct,
     par_vs_ac_factor,
     is_hierarchy_valid,
+    is_current,
     load_timestamp
 )
 SELECT
-    HASH(s.spec_number, s.spec_version, s.spec_type_code, s.stage_code, p.product_name, m.material_name, p.dosage_form, p.strength, COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'), i.test_category_code, i.sequence_number) AS obt_ac_key,
+    HASH(s.spec_number, s.spec_version, s.spec_type_code, s.stage_code, p.product_name, m.material_name, p.dosage_form_name, p.strength, COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'), i.test_category_code, i.sequence_number) AS obt_ac_key,
     s.spec_number,
     s.spec_version,
     s.spec_type_code,
@@ -190,27 +223,29 @@ SELECT
     s.stage_code,
     p.product_name,
     m.material_name,
-    p.dosage_form,
+    p.dosage_form_name                      AS dosage_form,
     p.strength,
     COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST') AS test_name,
     i.test_code,
     i.test_category_code,
+    i.criticality,
+    u.uom_code,
     i.sequence_number,
-    NULL AS reporting_type,
-    NULL AS is_required,
+    i.reporting_type,
+    i.is_required,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.lower_limit_value END) AS ac_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) AS ac_upper_limit,
-    NULL AS ac_target_value,
+    MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.target_value END)      AS ac_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'AC'  THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'AC' THEN f.lower_limit_value END) AS ac_width,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.lower_limit_value END) AS nor_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) AS nor_upper_limit,
-    NULL AS nor_target_value,
+    MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.target_value END)      AS nor_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.lower_limit_value END) AS nor_width,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.lower_limit_value END) AS par_lower_limit,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.upper_limit_value END) AS par_upper_limit,
-    NULL AS par_target_value,
+    MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.target_value END)      AS par_target_value,
     MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.upper_limit_value END) -
         MAX(CASE WHEN lt.limit_type_code = 'PAR' THEN f.lower_limit_value END) AS par_width,
     CASE WHEN (MAX(CASE WHEN lt.limit_type_code = 'AC' THEN f.upper_limit_value END) -
@@ -248,6 +283,7 @@ SELECT
          MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END)
          OR MAX(CASE WHEN lt.limit_type_code = 'NOR' THEN f.upper_limit_value END) IS NULL)
     THEN TRUE ELSE FALSE END AS is_hierarchy_valid,
+    TRUE AS is_current,
     CURRENT_TIMESTAMP() AS load_timestamp
 FROM l2_2_unified_model.fact_specification_limit f
 JOIN l2_2_unified_model.dim_specification s       ON f.spec_key = s.spec_key
@@ -261,9 +297,10 @@ WHERE f.is_current = TRUE
   AND lt.limit_type_code IN ('AC', 'NOR', 'PAR')
 GROUP BY
     s.spec_number, s.spec_version, s.spec_type_code, s.status_code, s.stage_code,
-    p.product_name, m.material_name, p.dosage_form, p.strength,
+    p.product_name, m.material_name, p.dosage_form_name, p.strength,
     COALESCE(NULLIF(TRIM(i.test_name), ''), NULLIF(TRIM(i.test_code), ''), 'UNKNOWN_TEST'),
-    i.test_code, i.test_category_code, i.sequence_number;
+    i.test_code, i.test_category_code, i.criticality, u.uom_code,
+    i.sequence_number, i.reporting_type, i.is_required;
 
 -- COMMAND ----------
 
@@ -277,22 +314,26 @@ TRUNCATE TABLE l3_data_product.obt_stability_results;
 
 -- COMMAND ----------
 
--- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (filter null test_name)
+-- DBTITLE 1,TRUNCATE and LOAD obt_stability_results (PQ/CMC aligned)
 
 
 INSERT INTO l3_data_product.obt_stability_results (
     obt_stab_key,
     batch_number,
+    batch_type,
     manufacturing_date,
     expiry_date,
     batch_size,
     batch_size_unit,
     product_name,
+    product_family,
+    inn_name,
     dosage_form,
     strength,
     material_name,
     material_type,
     site_name,
+    site_code,
     country_code,
     lab_name,
     spec_number,
@@ -302,8 +343,9 @@ INSERT INTO l3_data_product.obt_stability_results (
     test_code,
     test_category_code,
     test_category_name,
-    criticality_code,
+    criticality,
     method_name,
+    technique,
     stability_study_id,
     storage_condition_code,
     storage_condition_name,
@@ -313,6 +355,7 @@ INSERT INTO l3_data_product.obt_stability_results (
     time_point_name,
     result_value,
     result_text,
+    percent_label_claim,
     uom_code,
     uom_name,
     result_status_code,
@@ -336,16 +379,20 @@ INSERT INTO l3_data_product.obt_stability_results (
 SELECT
     HASH(f.analytical_result_key)       AS obt_stab_key,
     b.batch_number,
+    b.batch_type,
     b.manufacturing_date,
     b.expiry_date,
     b.batch_size,
     b.batch_size_unit,
     p.product_name,
-    p.dosage_form_name,
+    p.product_family,
+    p.inn_name,
+    p.dosage_form_name                  AS dosage_form,
     p.strength,
     m.material_name,
     m.material_type_name                AS material_type,
     st.site_name,
+    st.site_code,
     st.country_code,
     f.lab_name,
     s.spec_number,
@@ -355,8 +402,9 @@ SELECT
     i.test_code,
     i.test_category_code,
     i.test_category_name,
-    i.criticality AS criticality_code,
+    i.criticality,
     tm.test_method_name                 AS method_name,
+    tm.analytical_technique             AS technique,
     f.stability_study_id,
     sc.condition_code                   AS storage_condition_code,
     sc.condition_name                   AS storage_condition_name,
@@ -366,6 +414,7 @@ SELECT
     tp.timepoint_name                   AS time_point_name,
     f.result_value,
     f.result_text,
+    f.percent_label_claim,
     u.uom_code,
     u.uom_name,
     f.result_status_code,

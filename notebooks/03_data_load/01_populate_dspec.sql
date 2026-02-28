@@ -3,6 +3,7 @@
 -- MAGIC # Populate dspec_specification — Denormalized Specification Table
 -- MAGIC Joins dim_specification, dim_specification_item, and fact_specification_limit
 -- MAGIC to produce a wide denormalized table with pivoted limit columns per item.
+-- MAGIC Aligned with PQ/CMC field naming conventions.
 
 -- COMMAND ----------
 
@@ -19,7 +20,7 @@ USE SCHEMA l2_2_unified_model;
 
 -- COMMAND ----------
 
--- DBTITLE 1,MERGE dspec_specification (fix NOT NULL Delta constraint)
+-- DBTITLE 1,MERGE dspec_specification (PQ/CMC aligned)
 MERGE INTO dspec_specification AS tgt
 USING (
     SELECT
@@ -41,7 +42,7 @@ USING (
         i.test_name,
         i.test_code,
         i.test_category_code,
-        i.criticality_code,
+        i.criticality AS criticality_code,
         u.uom_code,
         i.sequence_number,
         i.reporting_type,
@@ -101,7 +102,7 @@ USING (
         s.spec_number, s.spec_version, s.spec_title, s.spec_type_code, s.spec_type_name,
         p.product_name, m.material_name, st.site_name, mk.market_name,
         s.status_code, s.stage_code, p.strength,
-        i.test_name, i.test_code, i.test_category_code, i.criticality_code,
+        i.test_name, i.test_code, i.test_category_code, i.criticality,
         u.uom_code, i.sequence_number, i.reporting_type, i.is_required,
         s.is_current
 ) AS src

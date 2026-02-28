@@ -189,17 +189,19 @@ SELECT
   condition_name,
   temperature_celsius,
   humidity_pct,
-  ich_condition_type
+  ich_condition_type,
+  ich_zone,
+  recommended_duration_months
 FROM (
   SELECT *
   FROM VALUES
-      ('25C60RH',  '25°C / 60% RH',  CAST(25.0 AS DECIMAL(5,1)), CAST(60.0 AS DECIMAL(5,1)), 'LONG_TERM'),
-      ('30C65RH',  '30°C / 65% RH',  CAST(30.0 AS DECIMAL(5,1)), CAST(65.0 AS DECIMAL(5,1)), 'INTERMEDIATE'),
-      ('40C75RH',  '40°C / 75% RH',  CAST(40.0 AS DECIMAL(5,1)), CAST(75.0 AS DECIMAL(5,1)), 'ACCELERATED'),
-      ('5C',       '5°C ± 3°C',      CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED'),
-      ('REFRIG',   '2-8°C',          CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED'),
-      ('FREEZER',  '-20°C ± 5°C',    CAST(-20.0 AS DECIMAL(5,1)),NULL, 'FROZEN')
-  AS seed(condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type)
+      ('25C60RH',  '25°C / 60% RH',  CAST(25.0 AS DECIMAL(5,1)), CAST(60.0 AS DECIMAL(5,1)), 'LONG_TERM',     'II',  CAST(12 AS INT)),
+      ('30C65RH',  '30°C / 65% RH',  CAST(30.0 AS DECIMAL(5,1)), CAST(65.0 AS DECIMAL(5,1)), 'INTERMEDIATE',  'IVB', CAST(12 AS INT)),
+      ('40C75RH',  '40°C / 75% RH',  CAST(40.0 AS DECIMAL(5,1)), CAST(75.0 AS DECIMAL(5,1)), 'ACCELERATED',   NULL,  CAST(6 AS INT)),
+      ('5C',       '5°C ± 3°C',      CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED',  NULL, CAST(12 AS INT)),
+      ('REFRIG',   '2-8°C',          CAST(5.0 AS DECIMAL(5,1)),  NULL, 'REFRIGERATED',  NULL, CAST(12 AS INT)),
+      ('FREEZER',  '-20°C ± 5°C',    CAST(-20.0 AS DECIMAL(5,1)),NULL, 'FROZEN',        NULL, CAST(12 AS INT))
+  AS seed(condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, ich_zone, recommended_duration_months)
 );
 
 MERGE INTO dim_stability_condition AS tgt
@@ -210,9 +212,11 @@ WHEN MATCHED THEN UPDATE SET
   tgt.temperature_celsius = src.temperature_celsius,
   tgt.humidity_pct = src.humidity_pct,
   tgt.ich_condition_type = src.ich_condition_type,
+  tgt.ich_zone = src.ich_zone,
+  tgt.recommended_duration_months = src.recommended_duration_months,
   tgt.is_active = TRUE
-WHEN NOT MATCHED THEN INSERT (condition_key, condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, is_active)
-VALUES (src.condition_key, src.condition_code, src.condition_name, src.temperature_celsius, src.humidity_pct, src.ich_condition_type, TRUE);
+WHEN NOT MATCHED THEN INSERT (condition_key, condition_code, condition_name, temperature_celsius, humidity_pct, ich_condition_type, ich_zone, recommended_duration_months, is_active)
+VALUES (src.condition_key, src.condition_code, src.condition_name, src.temperature_celsius, src.humidity_pct, src.ich_condition_type, src.ich_zone, src.recommended_duration_months, TRUE);
 
 -- COMMAND ----------
 

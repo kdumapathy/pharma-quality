@@ -1,6 +1,6 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # Validation Queries — Pharma Quality Unified Data Model
+-- MAGIC # Validation Queries — Pharma Quality Unified Data Model (PQ/CMC)
 -- MAGIC End-to-end validation queries to verify data integrity across all layers.
 -- MAGIC
 -- MAGIC **Checks performed:**
@@ -28,12 +28,24 @@ SELECT 'L1: raw_lims_spec_item',     COUNT(*) FROM l1_raw.raw_lims_spec_item
 UNION ALL
 SELECT 'L1: raw_lims_spec_limit',    COUNT(*) FROM l1_raw.raw_lims_spec_limit
 UNION ALL
+SELECT 'L1: raw_process_recipe',     COUNT(*) FROM l1_raw.raw_process_recipe
+UNION ALL
+SELECT 'L1: raw_pdf_specification',  COUNT(*) FROM l1_raw.raw_pdf_specification
+UNION ALL
+SELECT 'L1: raw_vendor_analytical_results', COUNT(*) FROM l1_raw.raw_vendor_analytical_results
+UNION ALL
 -- L2.1 Source Conform
 SELECT 'L2.1: src_lims_specification', COUNT(*) FROM l2_1_scl.src_lims_specification
 UNION ALL
 SELECT 'L2.1: src_lims_spec_item',    COUNT(*) FROM l2_1_scl.src_lims_spec_item
 UNION ALL
 SELECT 'L2.1: src_lims_spec_limit',   COUNT(*) FROM l2_1_scl.src_lims_spec_limit
+UNION ALL
+SELECT 'L2.1: src_process_recipe',    COUNT(*) FROM l2_1_scl.src_process_recipe
+UNION ALL
+SELECT 'L2.1: src_pdf_specification', COUNT(*) FROM l2_1_scl.src_pdf_specification
+UNION ALL
+SELECT 'L2.1: src_vendor_analytical_results', COUNT(*) FROM l2_1_scl.src_vendor_analytical_results
 UNION ALL
 -- L2.2 Reference Dimensions
 SELECT 'L2.2: dim_date',              COUNT(*) FROM l2_2_unified_model.dim_date
@@ -43,6 +55,10 @@ UNION ALL
 SELECT 'L2.2: dim_limit_type',        COUNT(*) FROM l2_2_unified_model.dim_limit_type
 UNION ALL
 SELECT 'L2.2: dim_regulatory_context', COUNT(*) FROM l2_2_unified_model.dim_regulatory_context
+UNION ALL
+SELECT 'L2.2: dim_stability_condition', COUNT(*) FROM l2_2_unified_model.dim_stability_condition
+UNION ALL
+SELECT 'L2.2: dim_timepoint',         COUNT(*) FROM l2_2_unified_model.dim_timepoint
 UNION ALL
 -- L2.2 MDM Dimensions
 SELECT 'L2.2: dim_product',           COUNT(*) FROM l2_2_unified_model.dim_product
@@ -59,8 +75,16 @@ SELECT 'L2.2: dim_specification',     COUNT(*) FROM l2_2_unified_model.dim_speci
 UNION ALL
 SELECT 'L2.2: dim_specification_item', COUNT(*) FROM l2_2_unified_model.dim_specification_item
 UNION ALL
+SELECT 'L2.2: dim_batch',             COUNT(*) FROM l2_2_unified_model.dim_batch
+UNION ALL
+SELECT 'L2.2: dim_instrument',        COUNT(*) FROM l2_2_unified_model.dim_instrument
+UNION ALL
+SELECT 'L2.2: dim_laboratory',        COUNT(*) FROM l2_2_unified_model.dim_laboratory
+UNION ALL
 -- L2.2 Fact + Denormalized
 SELECT 'L2.2: fact_specification_limit', COUNT(*) FROM l2_2_unified_model.fact_specification_limit
+UNION ALL
+SELECT 'L2.2: fact_analytical_result', COUNT(*) FROM l2_2_unified_model.fact_analytical_result
 UNION ALL
 SELECT 'L2.2: dspec_specification',    COUNT(*) FROM l2_2_unified_model.dspec_specification
 UNION ALL
@@ -68,6 +92,8 @@ UNION ALL
 SELECT 'L3: obt_specification_ctd',   COUNT(*) FROM l3_data_product.obt_specification_ctd
 UNION ALL
 SELECT 'L3: obt_acceptance_criteria', COUNT(*) FROM l3_data_product.obt_acceptance_criteria
+UNION ALL
+SELECT 'L3: obt_stability_results',  COUNT(*) FROM l3_data_product.obt_stability_results
 ORDER BY table_name;
 
 -- COMMAND ----------
@@ -97,13 +123,20 @@ FROM l2_2_unified_model.dim_regulatory_context;
 
 -- COMMAND ----------
 
+SELECT 'dim_stability_condition' AS dimension, COUNT(*) AS total,
+       COUNT(DISTINCT ich_condition_type) AS condition_types,
+       COUNT(DISTINCT ich_zone) AS ich_zones
+FROM l2_2_unified_model.dim_stability_condition;
+
+-- COMMAND ----------
+
 -- MAGIC %md
 -- MAGIC ## 3. Referential Integrity — Star Schema FK Checks
 
 -- COMMAND ----------
 
 -- Fact → dim_specification (orphan check)
-SELECT 'fact → dim_specification' AS fk_check,
+SELECT 'fact_spec_limit → dim_specification' AS fk_check,
        COUNT(*) AS orphan_rows
 FROM l2_2_unified_model.fact_specification_limit f
 LEFT JOIN l2_2_unified_model.dim_specification s ON f.spec_key = s.spec_key
@@ -112,7 +145,7 @@ WHERE s.spec_key IS NULL;
 -- COMMAND ----------
 
 -- Fact → dim_specification_item (orphan check)
-SELECT 'fact → dim_specification_item' AS fk_check,
+SELECT 'fact_spec_limit → dim_specification_item' AS fk_check,
        COUNT(*) AS orphan_rows
 FROM l2_2_unified_model.fact_specification_limit f
 LEFT JOIN l2_2_unified_model.dim_specification_item i ON f.spec_item_key = i.spec_item_key
@@ -121,11 +154,20 @@ WHERE i.spec_item_key IS NULL;
 -- COMMAND ----------
 
 -- Fact → dim_limit_type (orphan check)
-SELECT 'fact → dim_limit_type' AS fk_check,
+SELECT 'fact_spec_limit → dim_limit_type' AS fk_check,
        COUNT(*) AS orphan_rows
 FROM l2_2_unified_model.fact_specification_limit f
 LEFT JOIN l2_2_unified_model.dim_limit_type lt ON f.limit_type_key = lt.limit_type_key
 WHERE lt.limit_type_key IS NULL;
+
+-- COMMAND ----------
+
+-- fact_analytical_result → dim_batch (orphan check)
+SELECT 'fact_analytical_result → dim_batch' AS fk_check,
+       COUNT(*) AS orphan_rows
+FROM l2_2_unified_model.fact_analytical_result f
+LEFT JOIN l2_2_unified_model.dim_batch b ON f.batch_key = b.batch_key
+WHERE b.batch_key IS NULL;
 
 -- COMMAND ----------
 
@@ -201,6 +243,16 @@ SELECT spec_number, test_name, ac_lower_limit, ac_upper_limit, ac_width,
        nor_tightness_pct, par_vs_ac_factor, is_hierarchy_valid
 FROM l3_data_product.obt_acceptance_criteria
 ORDER BY spec_number, sequence_number;
+
+-- COMMAND ----------
+
+-- Stability results summary by condition and time point
+SELECT storage_condition_code, time_point_code, COUNT(*) AS result_count,
+       SUM(CASE WHEN is_oos = TRUE THEN 1 ELSE 0 END) AS oos_count,
+       SUM(CASE WHEN is_oot = TRUE THEN 1 ELSE 0 END) AS oot_count
+FROM l3_data_product.obt_stability_results
+GROUP BY storage_condition_code, time_point_code
+ORDER BY storage_condition_code, time_point_code;
 
 -- COMMAND ----------
 

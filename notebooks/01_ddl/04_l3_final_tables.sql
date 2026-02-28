@@ -1,7 +1,8 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # L3 Final Data Products — Specifications & Stability
+-- MAGIC # L3 Final Data Products — Pharmaceutical Quality (PQ/CMC)
 -- MAGIC Creates the One Big Table (OBT) final data products for CTD submissions, acceptance criteria, and stability analysis.
+-- MAGIC Aligned with ICH Q6A/Q6B, ICH Q1A(R2), CTD Module 3, and GMP data standards.
 -- MAGIC
 -- MAGIC **Tables:**
 -- MAGIC - `obt_specification_ctd` — CTD-ready specification output (one row per spec × item × limit)
@@ -29,7 +30,8 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
 (
     obt_ctd_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
-    -- Specification
+    -- Specification header
+    spec_key                    BIGINT          NOT NULL    COMMENT 'FK to L2.2 dim_specification',
     spec_number                 STRING          NOT NULL    COMMENT 'Specification number',
     spec_version                STRING          NOT NULL    COMMENT 'Specification version',
     spec_title                  STRING                      COMMENT 'Specification title',
@@ -37,39 +39,52 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
     spec_type_name              STRING                      COMMENT 'Type display name',
     status_code                 STRING          NOT NULL    COMMENT 'Status: DRA|APP|SUP|OBS|ARCH',
     stage_code                  STRING                      COMMENT 'Stage: DEV|CLI|COM',
+    stage_name                  STRING                      COMMENT 'Stage display name',
 
-    -- Product & Material
+    -- Product (PQ/CMC)
     product_name                STRING                      COMMENT 'Product name',
-    product_family              STRING                      COMMENT 'Product family',
-    dosage_form                 STRING                      COMMENT 'Dosage form',
-    strength                    STRING                      COMMENT 'Strength',
-    material_name               STRING                      COMMENT 'Material name',
-    material_type               STRING                      COMMENT 'Material type',
+    inn_name                    STRING                      COMMENT 'International Nonproprietary Name (WHO INN)',
+    brand_name                  STRING                      COMMENT 'Brand / trade name',
+    dosage_form_code            STRING                      COMMENT 'Dosage form code',
+    dosage_form_name            STRING                      COMMENT 'Dosage form display name',
+    route_of_administration     STRING                      COMMENT 'Route of administration',
+    strength                    STRING                      COMMENT 'Strength string',
+    nda_number                  STRING                      COMMENT 'NDA/ANDA/BLA/MAA registration number',
 
-    -- Site & Market
+    -- Material (CMC)
+    material_name               STRING                      COMMENT 'Material name',
+    material_type_code          STRING                      COMMENT 'Material type code',
+    cas_number                  STRING                      COMMENT 'CAS Registry Number',
+
+    -- Site (GMP)
+    site_code                   STRING                      COMMENT 'Site code',
     site_name                   STRING                      COMMENT 'Site name',
-    country_code                STRING                      COMMENT 'Site country code',
-    market_name                 STRING                      COMMENT 'Market name',
-    region_code                 STRING                      COMMENT 'Region code',
+    site_regulatory_region      STRING                      COMMENT 'Regulatory region',
+
+    -- Market
+    region_code                 STRING                      COMMENT 'Market region code',
+    market_country_code         STRING                      COMMENT 'Market country code',
+    market_country_name         STRING                      COMMENT 'Market country name',
+    market_status               STRING                      COMMENT 'Marketing authorization status',
 
     -- Test / Item
     test_name                   STRING          NOT NULL    COMMENT 'Test name',
     test_code                   STRING                      COMMENT 'Test code',
     test_category_code          STRING                      COMMENT 'Category: PHY|CHE|IMP|MIC|BIO|STER|PACK',
     test_category_name          STRING                      COMMENT 'Category display name',
-    criticality_code            STRING                      COMMENT 'Criticality: CQA|CCQA|NCQA|KQA|REPORT',
+    criticality                 STRING                      COMMENT 'CQA classification: CQA|CCQA|NCQA|KQA|REPORT',
     sequence_number             INT                         COMMENT 'Display order',
-    reporting_type              STRING                      COMMENT 'NUMERIC|PASS_FAIL|TEXT|REPORT_ONLY',
     is_required                 BOOLEAN                     COMMENT 'Mandatory flag',
+    reporting_type              STRING                      COMMENT 'NUMERIC|PASS_FAIL|TEXT|REPORT_ONLY',
+    compendia_reference         STRING                      COMMENT 'Compendia reference for specification',
+    compendia_test_ref          STRING                      COMMENT 'Compendia test reference (USP <621>, EP 2.9.3)',
 
     -- Method
-    method_name                 STRING                      COMMENT 'Test method name',
-    method_number               STRING                      COMMENT 'Method document number',
-    technique                   STRING                      COMMENT 'Analytical technique',
-    compendia_test_ref          STRING                      COMMENT 'Compendia test reference',
+    test_method_name            STRING                      COMMENT 'Test method name',
+    test_method_number          STRING                      COMMENT 'Method document number',
 
     -- Limit
-    limit_type_code             STRING          NOT NULL    COMMENT 'Limit type code',
+    limit_type_code             STRING                      COMMENT 'Limit type code',
     limit_type_name             STRING                      COMMENT 'Limit type name',
     lower_limit_value           DECIMAL(18, 6)              COMMENT 'Lower limit',
     upper_limit_value           DECIMAL(18, 6)              COMMENT 'Upper limit',
@@ -93,6 +108,7 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
     effective_start_date        DATE                        COMMENT 'Limit effective start date',
     effective_end_date          DATE                        COMMENT 'Limit effective end date',
     approval_date               DATE                        COMMENT 'Specification approval date',
+    approver_name               STRING                      COMMENT 'Approving authority name',
 
     -- Metadata
     is_current                  BOOLEAN         NOT NULL    COMMENT 'Current version flag',
@@ -139,10 +155,11 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_acceptance_criteria
     test_name                   STRING          NOT NULL    COMMENT 'Test name',
     test_code                   STRING                      COMMENT 'Test code',
     test_category_code          STRING                      COMMENT 'Test category',
-    criticality_code            STRING                      COMMENT 'Criticality code',
+    criticality                 STRING                      COMMENT 'CQA classification',
     uom_code                    STRING                      COMMENT 'Unit of measure',
     sequence_number             INT                         COMMENT 'Display order',
     reporting_type              STRING                      COMMENT 'Reporting type',
+    is_required                 BOOLEAN                     COMMENT 'Mandatory flag',
 
     -- AC limits (pivoted)
     ac_lower_limit              DECIMAL(18, 6)              COMMENT 'Acceptance criteria lower limit',
@@ -197,21 +214,26 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
 
     -- Batch
     batch_number                STRING          NOT NULL    COMMENT 'Manufacturing batch / lot number',
+    batch_type                  STRING                      COMMENT 'Batch type (DEVELOPMENT|PILOT|COMMERCIAL|VALIDATION)',
     manufacturing_date          DATE                        COMMENT 'Batch manufacturing date',
     expiry_date                 DATE                        COMMENT 'Batch expiry date',
     batch_size                  DECIMAL(18, 4)              COMMENT 'Batch size',
     batch_size_unit             STRING                      COMMENT 'Batch size unit',
 
-    -- Product & Material
+    -- Product (PQ/CMC)
     product_name                STRING                      COMMENT 'Product name',
     product_family              STRING                      COMMENT 'Product family',
+    inn_name                    STRING                      COMMENT 'International Nonproprietary Name',
     dosage_form                 STRING                      COMMENT 'Dosage form',
     strength                    STRING                      COMMENT 'Strength',
+
+    -- Material (CMC)
     material_name               STRING                      COMMENT 'Material name',
     material_type               STRING                      COMMENT 'Material type',
 
-    -- Site
+    -- Site (GMP)
     site_name                   STRING                      COMMENT 'Testing site name',
+    site_code                   STRING                      COMMENT 'Site code',
     country_code                STRING                      COMMENT 'Site country code',
     lab_name                    STRING                      COMMENT 'Laboratory name',
 
@@ -225,7 +247,7 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
     test_code                   STRING                      COMMENT 'Test code',
     test_category_code          STRING                      COMMENT 'Category: PHY|CHE|IMP|MIC|BIO|STER',
     test_category_name          STRING                      COMMENT 'Category display name',
-    criticality_code            STRING                      COMMENT 'Criticality: CQA|CCQA|NCQA|KQA',
+    criticality                 STRING                      COMMENT 'CQA classification',
     method_name                 STRING                      COMMENT 'Test method name',
     technique                   STRING                      COMMENT 'Analytical technique',
 
@@ -241,6 +263,7 @@ CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
     -- Result
     result_value                DECIMAL(18, 6)              COMMENT 'Numeric test result',
     result_text                 STRING                      COMMENT 'Text result (non-numeric)',
+    percent_label_claim         DECIMAL(18, 6)              COMMENT 'Percent of label claim',
     uom_code                    STRING                      COMMENT 'Unit of measure code',
     uom_name                    STRING                      COMMENT 'Unit display name',
     result_status_code          STRING          NOT NULL    COMMENT 'Status: PASS|FAIL|OOS|OOT|PENDING|REPORT',
