@@ -105,7 +105,7 @@ USING (
         u.uom_code, i.sequence_number, i.reporting_type, i.is_required,
         s.is_current
 ) AS src
-ON tgt.spec_key = src.spec_key
+ON tgt.spec_key = src.spec_key AND tgt.spec_item_key = src.spec_item_key
 WHEN MATCHED THEN UPDATE SET
     dspec_key = tgt.dspec_key,
     spec_key = src.spec_key,

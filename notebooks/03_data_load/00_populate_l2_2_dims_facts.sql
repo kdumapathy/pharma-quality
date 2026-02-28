@@ -113,7 +113,7 @@ VALUES (
 -- DBTITLE 1,Cell 9 (fixed)
 MERGE INTO dim_test_method AS tgt
 USING (
-    SELECT DISTINCT
+    SELECT
         i.test_method_id_lims               AS test_method_id,
         HASH(i.test_method_id_lims)         AS test_method_key,
         COALESCE(i.compendia_test_ref, i.test_name) AS method_name,
@@ -129,6 +129,7 @@ USING (
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_lims_spec_item i
     WHERE i.is_current = TRUE AND i.test_method_id_lims IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY i.test_method_id_lims ORDER BY i.load_timestamp DESC) = 1
 ) AS src
 ON tgt.test_method_id = src.test_method_id
 WHEN MATCHED THEN UPDATE SET
@@ -151,7 +152,7 @@ VALUES (
 -- DBTITLE 1,Cell 11 (fixed)
 MERGE INTO dim_site AS tgt
 USING (
-    SELECT DISTINCT
+    SELECT
         s.site_id_lims                      AS site_id,
         HASH(s.site_id_lims)                AS site_key,
         s.site_id_lims                      AS site_code,
@@ -164,6 +165,7 @@ USING (
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_lims_specification s
     WHERE s.is_current = TRUE AND s.site_id_lims IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY s.site_id_lims ORDER BY s.load_timestamp DESC) = 1
 ) AS src
 ON tgt.site_id = src.site_id
 WHEN MATCHED THEN UPDATE SET
