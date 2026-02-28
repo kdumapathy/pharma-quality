@@ -494,7 +494,8 @@ def generate_fact_specification_limit(n, spec_items):
             "spec_limit_key": _hash(f"SL-{i+1:08d}"),
             "spec_key": item["spec_key"],
             "spec_item_key": item["spec_item_key"],
-            "limit_type_key": {"AC": 1, "NOR": 2, "PAR": 3}.get(lt, 1),
+            # Keys match ROW_NUMBER() OVER (ORDER BY limit_type_code) in 00_populate_reference_data.sql
+            "limit_type_key": {"AC": 1, "NOR": 5, "PAR": 6}.get(lt, 1),
             "uom_key": None,
             "effective_start_date_key": int(eff_date.strftime("%Y%m%d")),
             "effective_end_date_key": None,

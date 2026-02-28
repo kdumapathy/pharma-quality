@@ -14,6 +14,7 @@
 # MAGIC | 6 | 03_data_load/00_populate_reference_data | Reference dims + dim_date + stability conditions + timepoints |
 # MAGIC | 7 | 03_data_load/00_populate_l2_1 | L1 raw → L2.1 source conform (all sources) |
 # MAGIC | 8 | 03_data_load/00_populate_l2_2_dims_facts | L2.1 → L2.2 dims + facts (spec limits + analytical results) |
+# MAGIC | 8b | 02_seed_data/04_load_synthetic_l2_2 | Load synthetic CSV data into L2.2 (~294K rows) |
 # MAGIC | 9 | 03_data_load/01_populate_dspec | L2.2 denormalized dspec |
 # MAGIC | 10 | 03_data_load/02_populate_l3 | L3 OBT final products (CTD + AC + Stability) |
 # MAGIC | 11 | 04_validation/01_validation_queries | Validation checks |
@@ -94,6 +95,16 @@ dbutils.notebook.run(f"{base_path}/03_data_load/00_populate_l2_1", timeout_secon
 # COMMAND ----------
 
 dbutils.notebook.run(f"{base_path}/03_data_load/00_populate_l2_2_dims_facts", timeout_seconds=600)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 8b: Load Synthetic Data into L2.2
+# MAGIC Loads ~294K rows of synthetic pharma data from CSVs directly into L2.2 tables.
+
+# COMMAND ----------
+
+dbutils.notebook.run(f"{base_path}/02_seed_data/04_load_synthetic_l2_2", timeout_seconds=600)
 
 # COMMAND ----------
 
