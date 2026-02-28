@@ -842,8 +842,8 @@ WHEN NOT MATCHED THEN INSERT *;
 MERGE INTO dim_laboratory AS tgt
 USING (
     SELECT DISTINCT
-        HASH(v.lab_id_vendor)               AS laboratory_key,
-        v.lab_id_vendor                     AS laboratory_id,
+        HASH(v.lab_id)                      AS laboratory_key,
+        v.lab_id                            AS laboratory_id,
         v.lab_name                          AS laboratory_name,
         CAST(NULL AS STRING)                AS laboratory_type,
         ds.site_key                         AS site_key,
@@ -852,8 +852,8 @@ USING (
         CURRENT_TIMESTAMP()                 AS load_timestamp
     FROM l2_1_scl.src_vendor_analytical_results v
     LEFT JOIN dim_site ds ON ds.site_id = v.site_id_vendor
-    WHERE v.is_current = TRUE AND v.lab_id_vendor IS NOT NULL
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.lab_id_vendor ORDER BY v.source_ingestion_timestamp DESC) = 1
+    WHERE v.is_current = TRUE AND v.lab_id IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY v.lab_id ORDER BY v.source_ingestion_timestamp DESC) = 1
 ) AS src
 ON tgt.laboratory_key = src.laboratory_key
 WHEN MATCHED THEN UPDATE SET
@@ -880,7 +880,7 @@ USING (
             v.storage_condition_code,
             v.time_point_code,
             v.instrument_id_vendor,
-            v.lab_id_vendor,
+            v.lab_id,
             v.uom_code,
             CAST(DATE_FORMAT(v.test_date, 'yyyyMMdd') AS INT) AS test_date_key,
 
@@ -965,7 +965,7 @@ USING (
     LEFT JOIN dim_stability_condition sc ON sc.condition_code = sr.storage_condition_code
     LEFT JOIN dim_timepoint tp ON tp.timepoint_code = sr.time_point_code
     LEFT JOIN dim_instrument di ON di.instrument_id = sr.instrument_id_vendor
-    LEFT JOIN dim_laboratory dl ON dl.laboratory_id = sr.lab_id_vendor
+    LEFT JOIN dim_laboratory dl ON dl.laboratory_id = sr.lab_id
     LEFT JOIN dim_uom u ON u.uom_code = sr.uom_code
 ) AS src
 ON tgt.analytical_result_key = src.analytical_result_key
