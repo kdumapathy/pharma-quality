@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.fact_analytical_result
+CREATE OR REPLACE TABLE l2_2_unified_model.fact_analytical_result
 (
     analytical_result_key       BIGINT          NOT NULL    COMMENT 'Surrogate key',
     batch_key                   BIGINT          NOT NULL    COMMENT 'FK to dim_batch',

@@ -9,7 +9,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_uom
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_uom
 (
     uom_key                     BIGINT          NOT NULL    GENERATED ALWAYS AS IDENTITY
                                                             COMMENT 'Surrogate primary key',

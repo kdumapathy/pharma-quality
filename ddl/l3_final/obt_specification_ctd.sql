@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
+CREATE OR REPLACE TABLE l3_data_product.obt_specification_ctd
 (
     obt_ctd_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
 

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_test_method
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_test_method
 (
     test_method_key             BIGINT          NOT NULL    COMMENT 'Surrogate key',
     test_method_id              STRING          NOT NULL    COMMENT 'MDM-resolved method ID',

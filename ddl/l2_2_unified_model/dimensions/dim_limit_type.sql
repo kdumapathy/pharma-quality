@@ -11,7 +11,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_limit_type
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_limit_type
 (
     -- -------------------------------------------------------------------------
     -- Keys

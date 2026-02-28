@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_acceptance_criteria
+CREATE OR REPLACE TABLE l3_data_product.obt_acceptance_criteria
 (
     obt_ac_key                  BIGINT          NOT NULL    COMMENT 'Surrogate key',
 

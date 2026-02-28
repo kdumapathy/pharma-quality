@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_market
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_market
 (
     market_key                  BIGINT          NOT NULL    COMMENT 'Surrogate key',
     market_code                 STRING          NOT NULL    COMMENT 'Market code (ISO alpha-2 or region code)',

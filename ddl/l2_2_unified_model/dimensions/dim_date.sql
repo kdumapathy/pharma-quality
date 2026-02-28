@@ -9,7 +9,7 @@
 -- Author : Pharma Quality Data Team
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_date
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_date
 (
     date_key                    INT             NOT NULL    COMMENT 'Surrogate key as integer YYYYMMDD (e.g., 20240115)',
     full_date                   DATE            NOT NULL    COMMENT 'Calendar date value',

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_material
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_material
 (
     material_key                BIGINT          NOT NULL    COMMENT 'Surrogate key',
     material_id                 STRING          NOT NULL    COMMENT 'MDM-resolved material ID',

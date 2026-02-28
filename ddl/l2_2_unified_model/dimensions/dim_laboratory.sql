@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_laboratory
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_laboratory
 (
     laboratory_key              BIGINT          NOT NULL    COMMENT 'Surrogate key',
     laboratory_id               STRING          NOT NULL    COMMENT 'Laboratory ID',

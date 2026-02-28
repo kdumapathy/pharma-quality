@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_site
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_site
 (
     site_key                    BIGINT          NOT NULL    COMMENT 'Surrogate key',
     site_id                     STRING          NOT NULL    COMMENT 'MDM-resolved site ID',

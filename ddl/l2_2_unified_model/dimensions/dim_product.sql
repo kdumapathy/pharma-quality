@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_product
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_product
 (
     product_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
     product_id                  STRING          NOT NULL    COMMENT 'MDM-resolved product ID',

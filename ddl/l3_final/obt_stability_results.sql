@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
+CREATE OR REPLACE TABLE l3_data_product.obt_stability_results
 (
     obt_stab_key                BIGINT          NOT NULL    COMMENT 'Surrogate key',
 

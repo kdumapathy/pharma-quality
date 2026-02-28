@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_instrument
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_instrument
 (
     instrument_key              BIGINT          NOT NULL    COMMENT 'Surrogate key',
     instrument_id               STRING          NOT NULL    COMMENT 'Instrument / equipment ID',

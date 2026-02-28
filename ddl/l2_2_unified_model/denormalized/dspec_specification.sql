@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dspec_specification
+CREATE OR REPLACE TABLE l2_2_unified_model.dspec_specification
 (
     dspec_key                   BIGINT          NOT NULL    COMMENT 'Surrogate key',
     spec_key                    BIGINT          NOT NULL    COMMENT 'FK to dim_specification',

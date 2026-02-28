@@ -26,7 +26,7 @@ USE SCHEMA l3_data_product;
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_specification_ctd
+CREATE OR REPLACE TABLE l3_data_product.obt_specification_ctd
 (
     obt_ctd_key                 BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
@@ -134,7 +134,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_acceptance_criteria
+CREATE OR REPLACE TABLE l3_data_product.obt_acceptance_criteria
 (
     obt_ac_key                  BIGINT          NOT NULL    COMMENT 'Surrogate key',
 
@@ -208,7 +208,7 @@ TBLPROPERTIES (
 
 -- COMMAND ----------
 
-CREATE TABLE IF NOT EXISTS l3_data_product.obt_stability_results
+CREATE OR REPLACE TABLE l3_data_product.obt_stability_results
 (
     obt_stab_key                BIGINT          NOT NULL    COMMENT 'Surrogate key',
 

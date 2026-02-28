@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_batch
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_batch
 (
     batch_key                   BIGINT          NOT NULL    COMMENT 'Surrogate key',
     batch_number                STRING          NOT NULL    COMMENT 'Manufacturing batch / lot number',

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS l2_2_unified_model.dim_specification_item
+CREATE OR REPLACE TABLE l2_2_unified_model.dim_specification_item
 (
     spec_item_key               BIGINT          NOT NULL    COMMENT 'Surrogate key',
     source_spec_item_id         STRING          NOT NULL    COMMENT 'Source system natural key',
